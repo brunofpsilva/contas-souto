@@ -12,6 +12,8 @@
   --color-aviso: var(--aviso);
   --color-aviso-suave: var(--aviso-suave);
   --color-mau-suave: var(--mau-suave);
+  --color-grafico-1: var(--grafico-1);
+  --color-grafico-2: var(--grafico-2);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -79,6 +81,9 @@
   --aviso: #a66a00;
   --aviso-suave: #f6e7c8;
   --mau-suave: #f5d9d5;
+  /* Séries dos gráficos (validadas: contraste, daltonismo e banda de luminosidade) */
+  --grafico-1: #00806a;
+  --grafico-2: #b07400;
   --chart-1: #1f6b5c;
   --chart-2: #a66a00;
   --chart-3: #b3362b;
@@ -121,6 +126,8 @@
     --aviso: #e3a640;
     --aviso-suave: #3a2f1a;
     --mau-suave: #3d221f;
+    --grafico-1: #34a387;
+    --grafico-2: #b98018;
     --chart-1: #5cc2a8;
     --chart-2: #e3a640;
     --chart-3: #ef7a6e;
