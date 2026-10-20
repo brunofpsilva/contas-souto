@@ -11,8 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrar.mjs",
+    "db:studio": "drizzle-kit studio",
+    "cron:sync": "node --env-file-if-exists=.env scripts/cron-sync.mjs"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1",
