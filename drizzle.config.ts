@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { defineConfig } from "drizzle-kit";
 
-// Em local, lê o .env (no Railway as variáveis já estão no ambiente).
+// Em local, lê o .env (na Vercel as variáveis já estão no ambiente).
 if (existsSync(".env")) process.loadEnvFile(".env");
 
 export default defineConfig({

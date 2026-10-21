@@ -1,5 +1,5 @@
 // Aplica as migrações de ./drizzle à base de dados de DATABASE_URL.
-// Só usa dependências de produção (no Railway corre antes de cada deploy).
+// Só usa dependências de produção (na Vercel corre no build de produção, ver scripts/build.mjs).
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";

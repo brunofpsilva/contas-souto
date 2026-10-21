@@ -1,5 +1,5 @@
-// Serviço cron do Railway: pede à app que sincronize os saldos com o Wallet.
-// Variáveis: APP_URL (ex.: https://contas-souto.up.railway.app) e CRON_SECRET.
+// Faz o mesmo que o cron do GitHub Actions: pede à app que sincronize os saldos com o Wallet.
+// Variáveis: APP_URL (ex.: https://contas-souto.vercel.app ou http://localhost:3000) e CRON_SECRET.
 const url = process.env.APP_URL?.replace(/\/$/, "");
 const segredo = process.env.CRON_SECRET;
 
