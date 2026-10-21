@@ -1,11 +1,12 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
+import { sslPara } from "./ssl.mjs";
 
 function criar() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("Falta configurar DATABASE_URL.");
-  const cliente = postgres(url, { max: 5, idle_timeout: 30 });
+  const cliente = postgres(url, { max: 5, idle_timeout: 30, ssl: sslPara(url) });
   return drizzle(cliente, { schema, casing: "snake_case" });
 }
 

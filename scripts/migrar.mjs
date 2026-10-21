@@ -3,6 +3,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
+import { sslPara } from "../src/db/ssl.mjs";
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -10,7 +11,7 @@ if (!url) {
   process.exit(1);
 }
 
-const cliente = postgres(url, { max: 1, onnotice: () => {} });
+const cliente = postgres(url, { max: 1, onnotice: () => {}, ssl: sslPara(url) });
 try {
   await migrate(drizzle(cliente), { migrationsFolder: "./drizzle" });
   console.log("Migrações aplicadas.");
