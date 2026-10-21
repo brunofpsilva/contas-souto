@@ -19,7 +19,7 @@ O cálculo está em `src/lib/previsao.ts` e os testes (incluindo os da versão a
 
 ## Stack
 
-Next.js 16 (App Router, TypeScript strict) · Postgres com Drizzle ORM · next-auth v4 (Google) · Tailwind 4 + shadcn/ui · Recharts · Vitest · Railway. Node 24.
+Next.js 16 (App Router, TypeScript strict) · Postgres com Drizzle ORM · next-auth v4 (Google) · Tailwind 4 + shadcn/ui · Recharts · Vitest. App na **Vercel**, Postgres no **Railway**, sincronização de hora a hora com **GitHub Actions**. Node 24.
 
 ## Correr localmente
 
@@ -49,14 +49,14 @@ Todas estão em `.env.example`. O ficheiro `.env` nunca vai para o Git.
 
 | Variável | Para que serve | Onde a obter |
 |---|---|---|
-| `DATABASE_URL` | ligação ao Postgres | em local, o `DATABASE_PUBLIC_URL` do Postgres do Railway; no serviço da app no Railway, a referência `${{Postgres.DATABASE_URL}}` |
-| `NEXTAUTH_URL` | endereço público da app, sem barra no fim | `http://localhost:3000` em local; o domínio do Railway em produção |
+| `DATABASE_URL` | ligação ao Postgres (fora da rede do Railway usa SSL automaticamente) | o `DATABASE_PUBLIC_URL` do Postgres no Railway (Postgres → Variables; precisa do TCP Proxy ativo) |
+| `NEXTAUTH_URL` | endereço público da app, sem barra no fim | `http://localhost:3000` em local; o domínio da Vercel em produção |
 | `NEXTAUTH_SECRET` | assina o cookie da sessão | gera um (ver "Gerar segredos") |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | login Google | Google Cloud Console (ver "Login Google") |
 | `ALLOWED_EMAILS` | emails que podem entrar, separados por vírgula; qualquer outro é recusado | os vossos emails Google |
 | `WALLET_API_TOKEN` | lê as contas do Wallet; fica só no servidor | https://web.budgetbakers.com/settings/apiTokens (precisa de Premium) |
-| `CRON_SECRET` | segredo partilhado entre a app e o serviço cron | gera um (ver "Gerar segredos") |
-| `APP_URL` | só no serviço cron: endereço da app | o domínio do Railway |
+| `CRON_SECRET` | segredo partilhado entre a app e o cron do GitHub Actions | gera um (ver "Gerar segredos") |
+| `APP_URL` | só para o cron (secret no GitHub) e para `npm run cron:sync` em local: endereço da app | o domínio da Vercel |
 
 ### Gerar segredos
 
@@ -86,41 +86,48 @@ Em https://web.budgetbakers.com/settings/apiTokens gera um token (precisa do pla
 
 A app usa `GET https://rest.budgetbakers.com/wallet/v1/api/accounts` (confirmado na documentação OpenAPI: https://rest.budgetbakers.com/wallet/openapi/ui).
 
-## Deploy no Railway
+## Deploy
 
-O projeto tem três serviços: **Postgres**, **app** e **cron**. A configuração da app está em `railway.json` e a do cron em `railway.cron.json`.
+| Peça | Onde | Custo |
+|---|---|---|
+| App (Next.js) | Vercel, plano Hobby | grátis (uso pessoal, não comercial) |
+| Base de dados | Railway, Postgres | ver o separador **Usage** do Railway |
+| Sincronização de hora a hora | GitHub Actions (`.github/workflows/sincronizar-wallet.yml`) | grátis em repositório público |
 
-### 1. Postgres
+O plano gratuito da Vercel só permite cron uma vez por dia, por isso o cron é do GitHub.
 
-No projeto do Railway: **+ Create → Database → PostgreSQL**. Não precisa de mais nada.
+### 1. Postgres no Railway
 
-### 2. App
+1. No projeto do Railway: **+ Create → Database → PostgreSQL**.
+2. No serviço Postgres: **Settings → Networking → Public Networking → TCP Proxy** (porta `5432`). Aparece a variável `DATABASE_PUBLIC_URL`.
+3. Em **Settings → Region**, vê em que região está (para escolher a mesma zona na Vercel).
 
-1. **+ Create → GitHub Repo** e escolhe `contas-souto`. O Railway lê o `railway.json`: faz `npm run build`, aplica as migrações antes de cada deploy (`npm run db:migrate`) e arranca com `npm start`. O health check é `/api/health`.
-2. No serviço, separador **Variables**, adiciona:
-   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (escreve exatamente isto; o Railway liga ao Postgres pela rede interna)
+### 2. App na Vercel
+
+1. Em https://vercel.com entra com o GitHub e carrega em **Add New → Project**. Importa `contas-souto` (framework: Next.js, o resto fica como está).
+2. Em **Environment Variables**, adiciona (só no ambiente **Production**):
+   - `DATABASE_URL` = o `DATABASE_PUBLIC_URL` do Railway
    - `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ALLOWED_EMAILS`, `WALLET_API_TOKEN`, `CRON_SECRET`
-   - `NEXTAUTH_URL` = o domínio do passo 3 (por exemplo `https://contas-souto.up.railway.app`)
-3. **Settings → Networking → Generate Domain** para teres o endereço público (ou **Custom Domain** se quiseres um domínio teu, seguindo as instruções de DNS que o Railway mostra).
-4. Volta ao Google Cloud Console e acrescenta esse domínio às origens e ao URI de redirecionamento (ver "Login Google").
+   - `NEXTAUTH_URL` = o domínio de produção, p. ex. `https://contas-souto.vercel.app`
+3. **Deploy.** No build de produção, `scripts/build.mjs` aplica as migrações antes do `next build`. Builds de pré-visualização não tocam na base de dados (e, sem as variáveis, não funcionam: é de propósito, para nunca usarem os dados reais).
+4. **Settings → Functions → Function Region**: escolhe a região mais próxima da do Postgres.
+5. No Google Cloud Console, acrescenta o domínio às origens e ao URI de redirecionamento (ver "Login Google").
 
-Cada push para o branch `main` faz um deploy novo.
+Cada push para o branch `main` faz um deploy novo de produção.
 
-### 3. Cron (sincronização de hora a hora)
+### 3. Cron no GitHub Actions
 
-1. **+ Create → GitHub Repo** e escolhe outra vez `contas-souto`. Muda o nome do serviço para `cron`.
-2. **Settings → Config-as-code → Railway Config File**: `/railway.cron.json`. Isto faz o serviço correr `node scripts/cron-sync.mjs` de hora a hora, à hora certa (`0 * * * *`) e terminar.
-3. **Variables**:
-   - `APP_URL` = `https://${{app.RAILWAY_PUBLIC_DOMAIN}}` (troca `app` pelo nome do serviço da app)
-   - `CRON_SECRET` = `${{app.CRON_SECRET}}`
-4. Não gere domínio para este serviço.
+1. No repositório no GitHub: **Settings → Secrets and variables → Actions → New repository secret**:
+   - `APP_URL` = o domínio da Vercel (p. ex. `https://contas-souto.vercel.app`)
+   - `CRON_SECRET` = o mesmo valor que puseste na Vercel
+2. O workflow **Sincronizar Wallet** corre de hora a hora (minuto 7, UTC). Para testar já: separador **Actions → Sincronizar Wallet → Run workflow**.
 
-O cron chama `POST /api/cron/sync` com `Authorization: Bearer <CRON_SECRET>`. Cada sincronização fica registada e a página Contas mostra a última ("automática").
+O workflow chama `POST /api/cron/sync` com `Authorization: Bearer <CRON_SECRET>`. Se a sincronização falhar, o workflow fica a vermelho e o GitHub avisa por email. O GitHub pode atrasar alguns minutos e desliga workflows agendados em repositórios sem atividade há 60 dias; nesse caso basta reativá-lo no separador Actions. O botão **Sincronizar com Wallet** funciona sempre.
 
 ### Verificar
 
 - Abre o domínio, entra com Google e vai a **Contas → Sincronizar com Wallet**.
-- Nos **Deploy Logs** do serviço cron, deve aparecer `[cron] ... 200 {"ok":true,...}` a cada hora.
+- Em **Actions → Sincronizar Wallet**, cada execução deve terminar a verde com `{"ok":true,...}`; na página Contas aparece "Última sincronização: … · automática".
 
 ## Estrutura
 
@@ -131,7 +138,7 @@ src/
     login/            página de login
     api/auth/         Auth.js (next-auth v4)
     api/cron/sync/    sincronização chamada pelo cron
-    api/health/       health check do Railway
+    api/health/       verificação simples de que a app está de pé
     manifest.ts, icon.tsx, apple-icon.tsx   PWA
   actions/            server actions (despesas, contas)
   components/         interface (ui/ = shadcn)
@@ -139,6 +146,7 @@ src/
   lib/                previsão, cliente do Wallet, validação, formatos, auth
   proxy.ts            redireciona para /login sem sessão autorizada
 drizzle/              migrações SQL
-scripts/              migrar.mjs (migrações), cron-sync.mjs (cron)
+scripts/              build.mjs (build + migrações em produção), migrar.mjs, cron-sync.mjs
+.github/workflows/    sincronizar-wallet.yml (cron de hora a hora)
 test/                 testes Vitest
 ```

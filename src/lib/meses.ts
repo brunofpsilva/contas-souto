@@ -1,5 +1,5 @@
 // Meses no formato "AAAA-MM". O mês atual conta sempre na hora de Lisboa,
-// mesmo que o servidor esteja noutro fuso (o Railway corre em UTC).
+// mesmo que o servidor esteja noutro fuso (a Vercel corre em UTC).
 
 export type Mes = `${number}-${number}`;
 
