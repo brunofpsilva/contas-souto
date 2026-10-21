@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { sincronizar } from "@/lib/sync";
 
-// Chamado pelo serviço cron do Railway: POST com "Authorization: Bearer <CRON_SECRET>".
+// Chamado pelo cron do GitHub Actions (.github/workflows/sincronizar-wallet.yml): POST com "Authorization: Bearer <CRON_SECRET>".
 function autorizado(cabecalho: string | null): boolean {
   const segredo = process.env.CRON_SECRET;
   if (!segredo || !cabecalho?.startsWith("Bearer ")) return false;
