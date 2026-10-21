@@ -1,0 +1,35 @@
+# Sincroniza os saldos do Wallet de hora a hora, chamando a app na Vercel.
+# Precisa de dois secrets no repositório (Settings → Secrets and variables → Actions):
+#   APP_URL      endereço da app, p. ex. https://contas-souto.vercel.app
+#   CRON_SECRET  o mesmo valor que está nas variáveis da Vercel
+name: Sincronizar Wallet
+
+on:
+  schedule:
+    - cron: "7 * * * *" # de hora a hora (UTC); o minuto 7 evita a hora certa, quando o GitHub está mais carregado
+  workflow_dispatch: # permite correr à mão no separador Actions
+
+permissions: {}
+
+concurrency:
+  group: sincronizar-wallet
+  cancel-in-progress: false
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Pedir à app que sincronize
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::warning::Faltam os secrets APP_URL e/ou CRON_SECRET; nada a fazer."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            -X POST "${APP_URL%/}/api/cron/sync" \
+            -H "Authorization: Bearer $CRON_SECRET"
+          echo
