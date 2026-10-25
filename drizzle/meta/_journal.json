@@ -8,6 +8,48 @@
       "when": 1792538046293,
       "tag": "0000_inicial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792618812824,
+      "tag": "0001_escritura",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792619204567,
+      "tag": "0002_movimentos",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792884035107,
+      "tag": "0003_remover_meses_e_prestacao",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792887962740,
+      "tag": "0004_gastos_editados",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792889266802,
+      "tag": "0005_conclusao_obra",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792890791111,
+      "tag": "0006_divisoes",
+      "breakpoints": true
     }
   ]
 }

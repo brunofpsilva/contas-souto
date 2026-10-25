@@ -1,0 +1,883 @@
+{
+  "id": "e5fcea29-8151-4fcf-917f-40136a3f1347",
+  "prevId": "5ec805ce-b9e9-49e3-b769-a31d242cd928",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.contas": {
+      "name": "contas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "saldo": {
+          "name": "saldo",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "moeda": {
+          "name": "moeda",
+          "type": "char(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'EUR'"
+        },
+        "sincronizado_em": {
+          "name": "sincronizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.definicoes": {
+      "name": "definicoes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "reserva": {
+          "name": "reserva",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "contas_escolhidas": {
+          "name": "contas_escolhidas",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_escritura": {
+          "name": "data_escritura",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_conclusao_obra": {
+          "name": "data_conclusao_obra",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "atualizado_por": {
+          "name": "atualizado_por",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "definicoes_atualizado_por_utilizadores_email_fk": {
+          "name": "definicoes_atualizado_por_utilizadores_email_fk",
+          "tableFrom": "definicoes",
+          "tableTo": "utilizadores",
+          "columnsFrom": [
+            "atualizado_por"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "definicoes_linha_unica": {
+          "name": "definicoes_linha_unica",
+          "value": "\"definicoes\".\"id\" = 1"
+        },
+        "definicoes_reserva_positiva": {
+          "name": "definicoes_reserva_positiva",
+          "value": "\"definicoes\".\"reserva\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.despesas": {
+      "name": "despesas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "despesas_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "valor": {
+          "name": "valor",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mes": {
+          "name": "mes",
+          "type": "char(7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "categoria": {
+          "name": "categoria",
+          "type": "categoria",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Outros'"
+        },
+        "quem": {
+          "name": "quem",
+          "type": "pessoa",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Ambos'"
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_despesa",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'previsto'"
+        },
+        "nota": {
+          "name": "nota",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "na_escritura": {
+          "name": "na_escritura",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "na_conclusao_obra": {
+          "name": "na_conclusao_obra",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "divisao_id": {
+          "name": "divisao_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "criado_por": {
+          "name": "criado_por",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "atualizado_por": {
+          "name": "atualizado_por",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "pago_por": {
+          "name": "pago_por",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pago_em": {
+          "name": "pago_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "despesas_estado_mes_idx": {
+          "name": "despesas_estado_mes_idx",
+          "columns": [
+            {
+              "expression": "estado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "mes",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "despesas_divisao_idx": {
+          "name": "despesas_divisao_idx",
+          "columns": [
+            {
+              "expression": "divisao_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "despesas_divisao_id_divisoes_id_fk": {
+          "name": "despesas_divisao_id_divisoes_id_fk",
+          "tableFrom": "despesas",
+          "tableTo": "divisoes",
+          "columnsFrom": [
+            "divisao_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "despesas_criado_por_utilizadores_email_fk": {
+          "name": "despesas_criado_por_utilizadores_email_fk",
+          "tableFrom": "despesas",
+          "tableTo": "utilizadores",
+          "columnsFrom": [
+            "criado_por"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "despesas_atualizado_por_utilizadores_email_fk": {
+          "name": "despesas_atualizado_por_utilizadores_email_fk",
+          "tableFrom": "despesas",
+          "tableTo": "utilizadores",
+          "columnsFrom": [
+            "atualizado_por"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "despesas_pago_por_utilizadores_email_fk": {
+          "name": "despesas_pago_por_utilizadores_email_fk",
+          "tableFrom": "despesas",
+          "tableTo": "utilizadores",
+          "columnsFrom": [
+            "pago_por"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "despesas_valor_positivo": {
+          "name": "despesas_valor_positivo",
+          "value": "\"despesas\".\"valor\" >= 0"
+        },
+        "despesas_mes_formato": {
+          "name": "despesas_mes_formato",
+          "value": "\"despesas\".\"mes\" ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'"
+        },
+        "despesas_pago_coerente": {
+          "name": "despesas_pago_coerente",
+          "value": "\"despesas\".\"estado\" = 'pago' OR (\"despesas\".\"pago_em\" IS NULL AND \"despesas\".\"pago_por\" IS NULL)"
+        },
+        "despesas_um_marco": {
+          "name": "despesas_um_marco",
+          "value": "NOT (\"despesas\".\"na_escritura\" AND \"despesas\".\"na_conclusao_obra\")"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.divisoes": {
+      "name": "divisoes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "divisoes_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(40)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "orcamento": {
+          "name": "orcamento",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "criado_por": {
+          "name": "criado_por",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "atualizado_por": {
+          "name": "atualizado_por",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "divisoes_nome_unico": {
+          "name": "divisoes_nome_unico",
+          "columns": [
+            {
+              "expression": "lower(\"nome\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "divisoes_criado_por_utilizadores_email_fk": {
+          "name": "divisoes_criado_por_utilizadores_email_fk",
+          "tableFrom": "divisoes",
+          "tableTo": "utilizadores",
+          "columnsFrom": [
+            "criado_por"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "divisoes_atualizado_por_utilizadores_email_fk": {
+          "name": "divisoes_atualizado_por_utilizadores_email_fk",
+          "tableFrom": "divisoes",
+          "tableTo": "utilizadores",
+          "columnsFrom": [
+            "atualizado_por"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "divisoes_orcamento_positivo": {
+          "name": "divisoes_orcamento_positivo",
+          "value": "\"divisoes\".\"orcamento\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.gastos_editados": {
+      "name": "gastos_editados",
+      "schema": "",
+      "columns": {
+        "mes": {
+          "name": "mes",
+          "type": "char(7)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "valor": {
+          "name": "valor",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "atualizado_por": {
+          "name": "atualizado_por",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "atualizado_em": {
+          "name": "atualizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "gastos_editados_atualizado_por_utilizadores_email_fk": {
+          "name": "gastos_editados_atualizado_por_utilizadores_email_fk",
+          "tableFrom": "gastos_editados",
+          "tableTo": "utilizadores",
+          "columnsFrom": [
+            "atualizado_por"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "gastos_editados_valor_positivo": {
+          "name": "gastos_editados_valor_positivo",
+          "value": "\"gastos_editados\".\"valor\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.movimentos": {
+      "name": "movimentos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "conta_id": {
+          "name": "conta_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mes": {
+          "name": "mes",
+          "type": "char(7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "valor": {
+          "name": "valor",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "moeda": {
+          "name": "moeda",
+          "type": "char(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'EUR'"
+        },
+        "categoria_id": {
+          "name": "categoria_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "categoria_pai_id": {
+          "name": "categoria_pai_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "categoria_nome": {
+          "name": "categoria_nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "grupo": {
+          "name": "grupo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "nota": {
+          "name": "nota",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "transferencia": {
+          "name": "transferencia",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "sincronizado_em": {
+          "name": "sincronizado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "movimentos_mes_idx": {
+          "name": "movimentos_mes_idx",
+          "columns": [
+            {
+              "expression": "mes",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sincronizacoes": {
+      "name": "sincronizacoes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "sincronizacoes_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "origem": {
+          "name": "origem",
+          "type": "origem_sync",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "iniciada_por": {
+          "name": "iniciada_por",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "iniciada_em": {
+          "name": "iniciada_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "terminada_em": {
+          "name": "terminada_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ok": {
+          "name": "ok",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mensagem": {
+          "name": "mensagem",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "codigo_erro": {
+          "name": "codigo_erro",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "n_contas": {
+          "name": "n_contas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "n_movimentos": {
+          "name": "n_movimentos",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallet_a_sincronizar": {
+          "name": "wallet_a_sincronizar",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "sincronizacoes_iniciada_idx": {
+          "name": "sincronizacoes_iniciada_idx",
+          "columns": [
+            {
+              "expression": "iniciada_em",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sincronizacoes_iniciada_por_utilizadores_email_fk": {
+          "name": "sincronizacoes_iniciada_por_utilizadores_email_fk",
+          "tableFrom": "sincronizacoes",
+          "tableTo": "utilizadores",
+          "columnsFrom": [
+            "iniciada_por"
+          ],
+          "columnsTo": [
+            "email"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.utilizadores": {
+      "name": "utilizadores",
+      "schema": "",
+      "columns": {
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "criado_em": {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "ultimo_login": {
+          "name": "ultimo_login",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.categoria": {
+      "name": "categoria",
+      "schema": "public",
+      "values": [
+        "Escritura e impostos",
+        "Obras",
+        "Mobília",
+        "Eletrodomésticos",
+        "Cozinha",
+        "Ligações (luz, água, gás, net)",
+        "Mudança",
+        "Decoração",
+        "Outros"
+      ]
+    },
+    "public.estado_despesa": {
+      "name": "estado_despesa",
+      "schema": "public",
+      "values": [
+        "previsto",
+        "pago"
+      ]
+    },
+    "public.origem_sync": {
+      "name": "origem_sync",
+      "schema": "public",
+      "values": [
+        "manual",
+        "cron"
+      ]
+    },
+    "public.pessoa": {
+      "name": "pessoa",
+      "schema": "public",
+      "values": [
+        "Ambos",
+        "Rui",
+        "Ana"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
