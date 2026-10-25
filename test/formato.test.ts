@@ -49,4 +49,17 @@ describe("textoEstado", () => {
     );
     expect(textoEstado(calcularPrevisao({ hoje, disponivel: 2000, despesas: [] }).resumo).texto).toBe("Nada por pagar");
   });
+
+  test("diz em que marco falta o dinheiro", () => {
+    const desp = [
+      { valor: 500, mes: "2026-12", estado: "previsto" as const, naEscritura: true },
+      { valor: 800, mes: "2026-12", estado: "previsto" as const, naConclusaoObra: true },
+    ];
+    const datas = { dataEscritura: "2026-12-05", dataConclusaoObra: "2026-12-20" };
+    const p = calcularPrevisao({ hoje, disponivel: 1000, despesas: desp, ...datas });
+    expect(textoEstado(p.resumo, p).texto).toBe("Falta dinheiro na conclusão da obra");
+    // Se já faltava antes dos marcos, diz o mês.
+    const q = calcularPrevisao({ hoje, disponivel: 1000, despesas: [...desp, { valor: 2000, mes: "2026-12", estado: "previsto" }], ...datas });
+    expect(textoEstado(q.resumo, q).texto).toBe("Falta dinheiro em dezembro de 2026");
+  });
 });

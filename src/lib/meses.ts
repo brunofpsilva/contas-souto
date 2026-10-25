@@ -16,6 +16,11 @@ export function mesDe(data: Date): Mes {
   return new Intl.DateTimeFormat("en-CA", { timeZone: FUSO, year: "numeric", month: "2-digit" }).format(data) as Mes;
 }
 
+/** Dia de uma data na hora de Lisboa, "AAAA-MM-DD". */
+export function diaDe(data: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: FUSO, year: "numeric", month: "2-digit", day: "2-digit" }).format(data);
+}
+
 export function somarMeses(mes: string, n: number): Mes {
   const [a, m] = mes.split("-").map(Number);
   const total = a * 12 + (m - 1) + n;

@@ -1,6 +1,7 @@
 // Formatos pt-PT: "1 234,56 €" (o pt-PT, por defeito, não agrupa milhares com 4 dígitos).
+import { MARCOS } from "./escritura";
 import { mesPorExtenso } from "./meses";
-import type { ResumoPrevisao } from "./previsao";
+import type { Previsao, ResumoPrevisao } from "./previsao";
 
 const EUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", useGrouping: "always" });
 const EUR_INTEIRO = new Intl.NumberFormat("pt-PT", {
@@ -30,15 +31,31 @@ export function dataHora(d: Date | string | null | undefined): string {
 
 export type TomEstado = "ok" | "aviso" | "mau" | "neutro";
 
-/** Frase do estado geral, como na versão antiga. */
-export function textoEstado(r: ResumoPrevisao): { texto: string; tom: TomEstado } {
+/**
+ * Frase do estado geral, como na versão antiga. Com `p`, se o alerta vem dos pagamentos
+ * de um marco (o saldo só fica abaixo do limite depois dele), diz "na escritura" ou
+ * "na conclusão da obra" em vez do mês.
+ */
+export function textoEstado(
+  r: ResumoPrevisao,
+  p?: Pick<Previsao, "marcos" | "reserva">,
+): { texto: string; tom: TomEstado; /** O valor no fim do texto, para o poder esconder. */ valor?: string } {
+  let quando = `em ${mesPorExtenso(r.mesAlerta ?? "")}`;
+  const limite = r.estado === "falta" ? 0 : (p?.reserva ?? 0);
+  const doMes = p?.marcos.filter((m) => m.mes === r.mesAlerta) ?? [];
+  if (doMes[0]?.antes && doMes[0].antes.base >= limite) {
+    const culpado = doMes.find((m) => m.depois && m.depois.base < limite);
+    if (culpado) quando = `na ${MARCOS[culpado.tipo].nome}`;
+  }
   switch (r.estado) {
     case "falta":
-      return { texto: `Falta dinheiro em ${mesPorExtenso(r.mesAlerta!)}`, tom: "mau" };
+      return { texto: `Falta dinheiro ${quando}`, tom: "mau" };
     case "abaixo-reserva":
-      return { texto: `Abaixo da reserva em ${mesPorExtenso(r.mesAlerta!)}`, tom: "aviso" };
-    case "ok":
-      return { texto: `Chega para tudo · mínimo ${euros(r.saldoMinimo, { inteiro: true })}`, tom: "ok" };
+      return { texto: `Abaixo da reserva ${quando}`, tom: "aviso" };
+    case "ok": {
+      const valor = euros(r.saldoMinimo, { inteiro: true });
+      return { texto: `Chega para tudo · mínimo ${valor}`, tom: "ok", valor };
+    }
     case "nada-por-pagar":
       return { texto: "Nada por pagar", tom: "neutro" };
     case "sem-saldos":
