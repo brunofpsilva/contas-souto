@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { lerContas, WalletError } from "@/lib/wallet";
+import { lerContas, lerMovimentos, WalletError } from "@/lib/wallet";
 
 // fetch falso: regista os pedidos e devolve as respostas pela ordem dada.
 function fetchFalso(respostas: Array<() => Response>) {
@@ -145,5 +145,53 @@ describe("erros", () => {
       throw new TypeError("fetch failed");
     }) as typeof fetch;
     await expect(lerContas(opts(fn))).rejects.toMatchObject({ codigo: "sem_ligacao" });
+  });
+});
+
+describe("lerMovimentos", () => {
+  const registo = (id: string, extra: object = {}) => ({
+    id,
+    accountId: "a1",
+    recordDate: "2026-09-30T23:00:00Z",
+    amount: { value: -12.5, currencyCode: "EUR" },
+    note: "Almoço",
+    category: { id: "c1", name: "Almoços", group: { id: "food_and_drinks", name: "Food" } },
+    transfer: null,
+    ...extra,
+  });
+
+  test("pede desde a data indicada, segue a paginação e normaliza", async () => {
+    const { fn, pedidos } = fetchFalso([
+      json({ records: [registo("r1")], limit: 200, offset: 0, nextOffset: 200 }),
+      json({
+        records: [
+          registo("r2", { transfer: { type: "paired" }, category: { id: "t", name: "Transfer", group: { id: "system_categories" } } }),
+          registo("r3", { category: { id: "x", name: "Mobília", parentId: "p", group: { id: "shopping" } } }),
+          { id: "mau" },
+        ],
+        limit: 200,
+        offset: 200,
+      }),
+    ]);
+    const r = await lerMovimentos(new Date("2025-09-30T00:00:00Z"), opts(fn));
+    expect(pedidos[0].url.pathname).toBe("/wallet/v1/api/records");
+    expect(pedidos[0].url.searchParams.get("recordDate")).toBe("gte.2025-09-30T00:00:00.000Z");
+    expect(pedidos.map((p) => p.url.searchParams.get("offset"))).toEqual(["0", "200"]);
+    expect(r.map((m) => m.id)).toEqual(["r1", "r2", "r3"]);
+    expect(r[0]).toEqual({
+      id: "r1",
+      contaId: "a1",
+      data: new Date("2026-09-30T23:00:00Z"),
+      valor: -12.5,
+      moeda: "EUR",
+      categoriaId: "c1",
+      categoriaPaiId: null,
+      categoriaNome: "Almoços",
+      grupo: "food_and_drinks",
+      nota: "Almoço",
+      transferencia: false,
+    });
+    expect(r[1].transferencia).toBe(true);
+    expect(r[2].categoriaPaiId).toBe("p");
   });
 });

@@ -6,14 +6,22 @@
 //   Account: { id, name, accountType, archived, isInvestmentAccount, currencyCode,
 //              balance: { currentBalance, currencyCode, ... } | null }
 //
+//   GET /v1/api/records?recordDate=gte.<ISO>&limit=&offset=
+//   -> { records: Record[], limit, offset, nextOffset? }
+//   Record: { id, accountId, recordDate, amount: { value, currencyCode }, note,
+//             category: { id, name, parentId?, group: { id, name } } | null, transfer: {...} | null }
+//   Sem filtro de data, a API usa só os últimos 3 meses; com um limite basta para o substituir.
+//
 // Limite de 500 pedidos por hora (cabeçalhos X-RateLimit-*). Durante a primeira
 // sincronização a API pode responder 409 ou indicar X-Sync-In-Progress: true.
 // O token só existe no servidor (WALLET_API_TOKEN); este módulo nunca vai para o browser.
 
 export const WALLET_BASE = "https://rest.budgetbakers.com/wallet";
 const CAMINHO_CONTAS = "/v1/api/accounts";
+const CAMINHO_MOVIMENTOS = "/v1/api/records";
 const POR_PAGINA = 200; // máximo permitido pela API
 const MAX_PAGINAS = 10;
+const MAX_PAGINAS_MOVIMENTOS = 40; // 8000 movimentos chegam para mais de um ano
 const TIMEOUT_MS = 15_000;
 
 export type CodigoErroWallet =
@@ -239,4 +247,79 @@ export async function lerContas(opts: Opcoes = {}): Promise<ResultadoContas> {
 
   const contas = brutas.filter((a) => a.archived !== true && !eInvestimento(a)).map(normalizarConta);
   return { contas, sincronizacaoEmCurso, pedidosRestantes };
+}
+
+/* ---------- movimentos ---------- */
+
+interface ApiMovimento {
+  id?: unknown;
+  accountId?: unknown;
+  recordDate?: unknown;
+  amount?: { value?: unknown; currencyCode?: unknown } | null;
+  note?: unknown;
+  category?: { id?: unknown; name?: unknown; parentId?: unknown; group?: { id?: unknown } | null } | null;
+  transfer?: unknown;
+}
+
+/** Movimento tal como a app o guarda (sem o mês, que é calculado na hora de Lisboa). */
+export interface MovimentoWallet {
+  id: string;
+  contaId: string;
+  data: Date;
+  valor: number;
+  moeda: string;
+  categoriaId: string | null;
+  categoriaPaiId: string | null;
+  categoriaNome: string;
+  grupo: string;
+  nota: string;
+  transferencia: boolean;
+}
+
+const texto = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+
+/** null quando falta o essencial (id, conta, data ou valor). */
+export function normalizarMovimento(r: ApiMovimento): MovimentoWallet | null {
+  const valor = num(r.amount?.value);
+  const data = typeof r.recordDate === "string" ? new Date(r.recordDate) : null;
+  if (r.id == null || r.accountId == null || valor == null || !data || Number.isNaN(data.getTime())) return null;
+  const c = r.category ?? null;
+  return {
+    id: String(r.id),
+    contaId: String(r.accountId),
+    data,
+    valor: Math.round(valor * 100) / 100,
+    moeda: String(r.amount?.currencyCode || "EUR").toUpperCase(),
+    categoriaId: c?.id != null ? String(c.id) : null,
+    categoriaPaiId: c?.parentId != null && c.parentId !== "" ? String(c.parentId) : null,
+    categoriaNome: texto(c?.name, 100),
+    grupo: texto(c?.group?.id, 50),
+    nota: texto(r.note),
+    transferencia: r.transfer != null,
+  };
+}
+
+/** Lê todos os movimentos com data igual ou posterior a `desde`, de todas as contas. */
+export async function lerMovimentos(desde: Date, opts: Opcoes = {}): Promise<MovimentoWallet[]> {
+  const lista: MovimentoWallet[] = [];
+  let offset = 0;
+  for (let pagina = 0; pagina < MAX_PAGINAS_MOVIMENTOS; pagina++) {
+    const { corpo } = await pedir(
+      CAMINHO_MOVIMENTOS,
+      { recordDate: `gte.${desde.toISOString()}`, limit: POR_PAGINA, offset },
+      opts,
+    );
+    const p = corpo as { records?: unknown; nextOffset?: unknown };
+    if (typeof corpo !== "object" || corpo === null || !Array.isArray(p.records)) {
+      throw new WalletError("A resposta do Wallet não tem o formato esperado (falta a lista de movimentos).", "formato");
+    }
+    for (const r of p.records as unknown[]) {
+      const m = typeof r === "object" && r !== null ? normalizarMovimento(r as ApiMovimento) : null;
+      if (m) lista.push(m);
+    }
+    const proximo = num(p.nextOffset);
+    if (proximo == null || p.records.length === 0 || proximo <= offset) return lista;
+    offset = proximo;
+  }
+  throw new WalletError("Há demasiados movimentos para ler de uma vez.", "formato");
 }

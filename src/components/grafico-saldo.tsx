@@ -12,23 +12,40 @@ import {
 } from "recharts";
 import { euros } from "@/lib/formato";
 import { mesCurto, mesPorExtenso } from "@/lib/meses";
+import { PRIVADO } from "@/lib/privacidade";
+import { cn } from "@/lib/utils";
 
 export interface PontoSaldo {
   mes: string;
   saldo: number;
+  /** [pessimista, otimista], quando há previsão do dia a dia. */
+  banda: [number, number] | null;
   saidas: number;
   atrasadas: number;
+  entradasPrevistas: number;
+  /** Gastos do dia a dia. */
+  saidasPrevistas: number;
 }
 
 const compacto = new Intl.NumberFormat("pt-PT", { notation: "compact", maximumFractionDigits: 1 });
 
-/** Saldo previsto ao fim de cada mês (uma série), com a linha da reserva. */
-export function GraficoSaldo({ pontos, reserva }: { pontos: PontoSaldo[]; reserva: number }) {
-  const min = Math.min(0, reserva, ...pontos.map((p) => p.saldo));
-  const max = Math.max(reserva, ...pontos.map((p) => p.saldo));
+/** Saldo previsto ao fim de cada mês, com a banda pessimista–otimista, a reserva e a escritura. */
+export function GraficoSaldo({
+  pontos,
+  reserva,
+  mesEscritura,
+}: {
+  pontos: PontoSaldo[];
+  reserva: number;
+  mesEscritura?: string;
+}) {
+  const valores = pontos.flatMap((p) => [p.saldo, ...(p.banda ?? [])]);
+  const min = Math.min(0, reserva, ...valores);
+  const max = Math.max(reserva, ...valores);
+  const comBanda = pontos.some((p) => p.banda);
 
   return (
-    <div className="h-64 w-full" role="img" aria-label="Gráfico do saldo previsto mês a mês; os valores estão na tabela ao lado.">
+    <div className="privado-eixo h-56 w-full touch-pan-y sm:h-64" role="img" aria-label="Gráfico do saldo previsto mês a mês; os valores estão na tabela abaixo.">
       <AreaChart responsive data={pontos} margin={{ top: 12, right: 12, bottom: 0, left: 0 }} style={{ width: "100%", height: "100%" }}>
         <defs>
           <linearGradient id="saldo-area" x1="0" y1="0" x2="0" y2="1">
@@ -47,7 +64,8 @@ export function GraficoSaldo({ pontos, reserva }: { pontos: PontoSaldo[]; reserv
           minTickGap={12}
         />
         <YAxis
-          width={44}
+          // Largura à medida das etiquetas ("123,5 mil" não cabia em 44px e ficava cortado).
+          width="auto"
           domain={[min, max]}
           tickFormatter={(v: number) => compacto.format(v)}
           tickLine={false}
@@ -65,6 +83,26 @@ export function GraficoSaldo({ pontos, reserva }: { pontos: PontoSaldo[]; reserv
             label={{ value: "Reserva", position: "insideTopRight", fill: "var(--muted-foreground)", fontSize: 11 }}
           />
         )}
+        {mesEscritura && pontos.some((p) => p.mes === mesEscritura) && (
+          <ReferenceLine
+            x={mesEscritura}
+            stroke="var(--foreground)"
+            strokeDasharray="3 3"
+            strokeWidth={1}
+            label={{ value: "Escritura", position: "insideTopLeft", fill: "var(--foreground)", fontSize: 11 }}
+          />
+        )}
+        {comBanda && (
+          <Area
+            type="linear"
+            dataKey="banda"
+            stroke="none"
+            fill="var(--grafico-1)"
+            fillOpacity={0.14}
+            isAnimationActive={false}
+            activeDot={false}
+          />
+        )}
         <Tooltip content={Dica} cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1 }} isAnimationActive={false} />
         <Area
           type="linear"
@@ -73,7 +111,7 @@ export function GraficoSaldo({ pontos, reserva }: { pontos: PontoSaldo[]; reserv
           strokeWidth={2}
           strokeLinejoin="round"
           strokeLinecap="round"
-          fill="url(#saldo-area)"
+          fill={comBanda ? "none" : "url(#saldo-area)"}
           dot={false}
           activeDot={{ r: 5, fill: "var(--grafico-1)", stroke: "var(--card)", strokeWidth: 2 }}
           isAnimationActive={false}
@@ -92,7 +130,7 @@ function Dica({ active, payload }: TooltipContentProps) {
       <p className="font-medium first-letter:uppercase">{mesPorExtenso(p.mes)}</p>
       <p className="flex justify-between gap-6">
         <span className="text-muted-foreground">Saldo previsto</span>
-        <span className={p.saldo < 0 ? "text-destructive font-mono" : "font-mono"}>{euros(p.saldo)}</span>
+        <span className={cn("font-mono", p.saldo < 0 && "text-destructive", PRIVADO)}>{euros(p.saldo)}</span>
       </p>
       <p className="flex justify-between gap-6">
         <span className="text-muted-foreground">Saídas no mês</span>
@@ -103,6 +141,24 @@ function Dica({ active, payload }: TooltipContentProps) {
           <span className="text-muted-foreground">das quais atrasadas</span>
           <span className="font-mono">{euros(p.atrasadas)}</span>
         </p>
+      )}
+      {p.banda && (
+        <>
+          <p className="flex justify-between gap-6">
+            <span className="text-muted-foreground">Entradas previstas</span>
+            <span className={cn("font-mono", PRIVADO)}>{euros(p.entradasPrevistas)}</span>
+          </p>
+          <p className="flex justify-between gap-6">
+            <span className="text-muted-foreground">Gastos do dia a dia</span>
+            <span className="font-mono">{euros(p.saidasPrevistas)}</span>
+          </p>
+          <p className="flex justify-between gap-6">
+            <span className="text-muted-foreground">Intervalo</span>
+            <span className={cn("font-mono", PRIVADO)}>
+              {euros(p.banda[0], { inteiro: true })} a {euros(p.banda[1], { inteiro: true })}
+            </span>
+          </p>
+        </>
       )}
     </div>
   );
