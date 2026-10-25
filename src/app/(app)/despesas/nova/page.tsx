@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { criarDespesa } from "@/actions/despesas";
 import { FormDespesa } from "@/components/form-despesa";
-import { mesDe } from "@/lib/meses";
+import { listarDivisoes, obterDatas } from "@/lib/dados";
+import { cicloDe } from "@/lib/ciclo";
 
 export const metadata: Metadata = { title: "Nova despesa" };
 
 export default async function NovaDespesaPage({ searchParams }: PageProps<"/despesas/nova">) {
-  const { adicionada } = await searchParams;
+  const [{ adicionada, divisao }, datas, divisoes] = await Promise.all([searchParams, obterDatas(), listarDivisoes()]);
   return (
     <>
       <h1 className="font-heading text-3xl font-bold tracking-tight">Nova despesa</h1>
@@ -19,7 +20,20 @@ export default async function NovaDespesaPage({ searchParams }: PageProps<"/desp
         acao={criarDespesa}
         textoBotao="Adicionar"
         permitirOutra
-        iniciais={{ descricao: "", valor: "", mes: mesDe(new Date()), categoria: "Outros", quem: "Ambos", estado: "previsto", nota: "" }}
+        datas={datas}
+        divisoes={divisoes}
+        iniciais={{
+          descricao: "",
+          valor: "",
+          mes: cicloDe(new Date()),
+          quando: "mes",
+          categoria: "Outros",
+          // Vindo da página Orçamento (?divisao=ID), já vem escolhida.
+          divisao: typeof divisao === "string" ? divisao : "nenhuma",
+          quem: "Ambos",
+          estado: "previsto",
+          nota: "",
+        }}
       />
     </>
   );

@@ -24,3 +24,7 @@ export type OrigemSync = (typeof ORIGENS_SYNC)[number];
 
 export const LIMITE_DESCRICAO = 120;
 export const LIMITE_NOTA = 200;
+export const LIMITE_NOME_DIVISAO = 40;
+
+/** Nome mostrado para as despesas sem divisão (não é uma linha da tabela, não se apaga). */
+export const SEM_DIVISAO = "Não aplicável";

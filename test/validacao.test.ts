@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { calcularDisponivel, marcarIncluidas } from "@/lib/contas";
-import { lerValor, validarDespesa, validarReserva } from "@/lib/validacao";
+import { lerValor, validarDespesa, validarGastosEditados, validarReserva } from "@/lib/validacao";
 
 describe("lerValor", () => {
   test.each([
@@ -35,7 +35,7 @@ describe("validarDespesa (regras da versão antiga)", () => {
     const r = validarDespesa({ descricao: " Sofá ", valor: "1 200,5", mes: "2026-12", categoria: "?", quem: "?", estado: "?" });
     expect(r).toEqual({
       ok: true,
-      despesa: { descricao: "Sofá", valor: 1200.5, mes: "2026-12", categoria: "Outros", quem: "Ambos", estado: "previsto", nota: "" },
+      despesa: { descricao: "Sofá", valor: 1200.5, mes: "2026-12", categoria: "Outros", quem: "Ambos", estado: "previsto", nota: "", naEscritura: false, naConclusaoObra: false, divisaoId: null },
     });
   });
 
@@ -48,6 +48,19 @@ describe("validarDespesa (regras da versão antiga)", () => {
     const r = validarDespesa({ descricao: "x".repeat(121), valor: "1", mes: "2026-12", nota: "y".repeat(201) });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(Object.keys(r.erros).sort()).toEqual(["descricao", "nota"]);
+  });
+});
+
+describe("validarDespesa na escritura", () => {
+  test("fica com o mês da data da escritura, ignorando o mês escrito", () => {
+    const r = validarDespesa({ descricao: "IMT", valor: "5000", quando: "escritura", mes: "2026-11" }, { dataEscritura: "2027-01-15" });
+    expect(r.ok && r.despesa).toMatchObject({ mes: "2027-01", naEscritura: true });
+  });
+
+  test("sem data da escritura não deixa escolher na escritura", () => {
+    const r = validarDespesa({ descricao: "IMT", valor: "5000", quando: "escritura", mes: "2026-11" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erros.mes).toMatch(/data da escritura/);
   });
 });
 
@@ -80,5 +93,43 @@ describe("contas que contam", () => {
 
   test("sem contas sincronizadas, o disponível é desconhecido", () => {
     expect(calcularDisponivel(marcarIncluidas([], null))).toBeNull();
+  });
+});
+
+describe("gastos editados", () => {
+  test("lê os campos por ciclo; vazio volta ao automático", () => {
+    const r = validarGastosEditados([
+      ["gasto:2026-11", "2 500"],
+      ["gasto:2026-12", ""],
+      ["outro", "x"],
+    ]);
+    expect(r).toEqual({ ok: true, guardar: [{ mes: "2026-11", valor: 2500 }], apagar: ["2026-12"] });
+  });
+
+  test("recusa meses e valores inválidos", () => {
+    expect(validarGastosEditados([["gasto:2026-13", "1"]]).ok).toBe(false);
+    expect(validarGastosEditados([["gasto:2026-11", "-5"]]).ok).toBe(false);
+    expect(validarGastosEditados([["gasto:2026-11", "abc"]]).ok).toBe(false);
+  });
+});
+
+describe("validarDespesa na conclusão da obra", () => {
+  test("fica com o ciclo da data da obra e não fica na escritura", () => {
+    const r = validarDespesa(
+      { descricao: "Empreiteiro", valor: "15000", quando: "obra", mes: "2026-11" },
+      { dataEscritura: "2026-12-15", dataConclusaoObra: "2027-03-10" },
+    );
+    expect(r.ok && r.despesa).toMatchObject({ mes: "2027-03", naConclusaoObra: true, naEscritura: false });
+  });
+
+  test("sem data da obra não deixa escolher", () => {
+    const r = validarDespesa({ descricao: "Empreiteiro", valor: "1", quando: "obra", mes: "2026-11" }, { dataEscritura: "2026-12-15" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.erros.mes).toMatch(/conclusão da obra/);
+  });
+
+  test("uma data depois do dia do salário fica no ciclo seguinte", () => {
+    const r = validarDespesa({ descricao: "IMT", valor: "1", quando: "escritura", mes: "" }, { dataEscritura: "2026-12-28" });
+    expect(r.ok && r.despesa.mes).toBe("2027-01");
   });
 });

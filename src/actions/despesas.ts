@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/db";
 import { exigirUtilizador } from "@/lib/auth";
+import { obterDatas } from "@/lib/dados";
 import { validarDespesa, type ErrosDespesa } from "@/lib/validacao";
 
 export type EstadoFormDespesa = {
@@ -17,7 +18,7 @@ export type EstadoFormDespesa = {
 const t = schema.despesas;
 
 function lerForm(form: FormData): Record<string, string> {
-  const campos = ["descricao", "valor", "mes", "categoria", "quem", "estado", "nota"] as const;
+  const campos = ["descricao", "valor", "mes", "quando", "categoria", "divisao", "quem", "estado", "nota"] as const;
   return Object.fromEntries(campos.map((c) => [c, String(form.get(c) ?? "")]));
 }
 
@@ -25,11 +26,21 @@ function idValido(id: unknown): id is number {
   return typeof id === "number" && Number.isInteger(id) && id > 0;
 }
 
+/** A divisão escolhida pode ter sido apagada entretanto (por outra pessoa). */
+async function divisaoExiste(id: number | null): Promise<boolean> {
+  if (id == null) return true;
+  const [d] = await db.select({ id: schema.divisoes.id }).from(schema.divisoes).where(eq(schema.divisoes.id, id)).limit(1);
+  return Boolean(d);
+}
+
+const DIVISAO_APAGADA = { divisaoId: "Esta divisão já não existe (pode ter sido apagada). Escolhe outra." };
+
 export async function criarDespesa(_anterior: EstadoFormDespesa, form: FormData): Promise<EstadoFormDespesa> {
   const eu = await exigirUtilizador();
   const valores = lerForm(form);
-  const r = validarDespesa(valores);
+  const r = validarDespesa(valores, await obterDatas());
   if (!r.ok) return { erros: r.erros, valores };
+  if (!(await divisaoExiste(r.despesa.divisaoId))) return { erros: DIVISAO_APAGADA, valores };
 
   const pago = r.despesa.estado === "pago";
   await db.insert(t).values({
@@ -52,8 +63,9 @@ export async function atualizarDespesa(id: number, _anterior: EstadoFormDespesa,
   const [atual] = await db.select().from(t).where(eq(t.id, id)).limit(1);
   if (!atual) return { erros: {}, mensagem: "Esta despesa já não existe (pode ter sido apagada).", valores };
 
-  const r = validarDespesa(valores);
+  const r = validarDespesa(valores, await obterDatas());
   if (!r.ok) return { erros: r.erros, valores };
+  if (!(await divisaoExiste(r.despesa.divisaoId))) return { erros: DIVISAO_APAGADA, valores };
 
   const mudouParaPago = r.despesa.estado === "pago" && atual.estado !== "pago";
   const mudouParaPrevisto = r.despesa.estado !== "pago";
