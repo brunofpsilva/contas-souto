@@ -154,5 +154,23 @@
   }
   html {
     @apply font-sans;
+    /* O iOS não aumenta o texto sozinho ao rodar o ecrã. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Âncoras e campos focados não ficam escondidos atrás do cabeçalho fixo. */
+    scroll-padding-top: 4.5rem;
+    /* Sem o flash cinzento ao tocar em ligações e botões. */
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Toque sem esperar pelo duplo toque de zoom. */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  summary,
+  [role="button"] {
+    touch-action: manipulation;
   }
 }

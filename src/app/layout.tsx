@@ -11,9 +11,17 @@ export const metadata: Metadata = {
   title: { default: "Contas Souto", template: "%s · Contas Souto" },
   description: "Previsão das despesas da casa no Souto contra o dinheiro nas contas do Wallet.",
   applicationName: "Contas Souto",
+  // No ecrã principal do iPhone abre como app, sem a barra do Safari.
+  appleWebApp: { capable: true, title: "Contas Souto", statusBarStyle: "default" },
+  // O iOS não transforma valores como "912 345 678" em ligações de telefone.
+  formatDetection: { telephone: false, email: false, address: false },
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Ocupa o ecrã todo (notch, barra do fundo); as margens seguras vêm do CSS.
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f2f4f1" },
     { media: "(prefers-color-scheme: dark)", color: "#141917" },

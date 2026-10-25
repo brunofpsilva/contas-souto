@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { guardarDefinicoes, type EstadoAcao } from "@/actions/contas";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { euros } from "@/lib/formato";
+import { PRIVADO } from "@/lib/privacidade";
 import { tipoConta } from "@/lib/rotulos";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ export function FormContas({
   reserva: number;
 }) {
   const [estado, acao, aGuardar] = useActionState<EstadoAcao, FormData>(guardarDefinicoes, null);
+  const [, iniciar] = useTransition();
   const [marcadas, setMarcadas] = useState(() => new Set(contas.filter((c) => c.incluida).map((c) => c.id)));
   // Só passa a escolha manual se mexerem nas caixas (mudar só a reserva não altera a regra).
   const [alterou, setAlterou] = useState(false);
@@ -44,14 +46,19 @@ export function FormContas({
   const total = Math.round(contas.filter((c) => marcadas.has(c.id)).reduce((s, c) => s + c.saldo, 0) * 100) / 100;
   const outrasMoedas = contas.filter((c) => marcadas.has(c.id) && c.moeda !== "EUR");
 
+  // Marcar ou desmarcar uma conta guarda logo (antes só guardava com o botão, mais abaixo,
+  // e quem saía da página perdia a escolha). A reserva enviada é a que está guardada.
   function alternar(id: string, sim: boolean) {
+    const n = new Set(marcadas);
+    if (sim) n.add(id);
+    else n.delete(id);
     setAlterou(true);
-    setMarcadas((m) => {
-      const n = new Set(m);
-      if (sim) n.add(id);
-      else n.delete(id);
-      return n;
-    });
+    setMarcadas(n);
+    const form = new FormData();
+    form.set("selecao", "manual");
+    form.set("reserva", String(reserva));
+    for (const c of n) form.append("conta", c);
+    iniciar(() => acao(form));
   }
 
   return (
@@ -76,7 +83,7 @@ export function FormContas({
             {contas.map((c) => {
               const id = `conta-${c.id}`;
               return (
-                <li key={c.id} className="flex items-center gap-3 px-4 py-3">
+                <li key={c.id} className="flex items-center gap-3 pl-4">
                   <Checkbox
                     id={id}
                     name="conta"
@@ -84,22 +91,25 @@ export function FormContas({
                     checked={marcadas.has(c.id)}
                     onCheckedChange={(v) => alternar(c.id, v === true)}
                   />
-                  <Label htmlFor={id} className="grid min-w-0 flex-1 cursor-pointer gap-0.5 font-normal">
-                    <span className="truncate font-medium">{c.nome}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {tipoConta(c.tipo)}
-                      {c.moeda !== "EUR" && ` · ${c.moeda}`}
+                  {/* A linha inteira (nome e saldo) marca e desmarca a conta. */}
+                  <Label htmlFor={id} className="flex min-h-14 min-w-0 flex-1 cursor-pointer items-center gap-3 py-3 pr-4 font-normal">
+                    <span className="grid min-w-0 flex-1 gap-0.5">
+                      <span className="truncate font-medium">{c.nome}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {tipoConta(c.tipo)}
+                        {c.moeda !== "EUR" && ` · ${c.moeda}`}
+                      </span>
+                    </span>
+                    <span className={cn("font-mono text-sm tabular-nums whitespace-nowrap", c.saldo < 0 && "text-destructive", PRIVADO)}>
+                      {c.moeda === "EUR" ? euros(c.saldo) : `${c.saldo.toLocaleString("pt-PT")} ${c.moeda}`}
                     </span>
                   </Label>
-                  <span className={cn("font-mono text-sm tabular-nums whitespace-nowrap", c.saldo < 0 && "text-destructive")}>
-                    {c.moeda === "EUR" ? euros(c.saldo) : `${c.saldo.toLocaleString("pt-PT")} ${c.moeda}`}
-                  </span>
                 </li>
               );
             })}
             <li className="bg-muted/40 flex items-center justify-between gap-3 px-4 py-3">
               <span className="font-medium">Disponível hoje</span>
-              <span className="font-mono font-medium tabular-nums">{euros(total)}</span>
+              <span className={cn("font-mono font-medium tabular-nums", PRIVADO)}>{euros(total)}</span>
             </li>
           </ul>
         )}
@@ -125,18 +135,18 @@ export function FormContas({
             defaultValue={reserva ? String(reserva).replace(".", ",") : ""}
             placeholder="0"
             aria-label="Reserva mínima em euros"
-            className="pr-8 font-mono"
+            className={cn("pr-8 font-mono", PRIVADO)}
           />
           <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm">€</span>
         </div>
       </section>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={aGuardar}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <Button type="submit" className="max-sm:h-11" disabled={aGuardar}>
           {aGuardar ? "A guardar…" : "Guardar"}
         </Button>
         {escolhaManual && (
-          <Button type="submit" name="modo" value="defeito" variant="ghost" disabled={aGuardar}>
+          <Button type="submit" name="modo" value="defeito" variant="ghost" className="max-sm:h-11" disabled={aGuardar}>
             Voltar às contas com saldo positivo
           </Button>
         )}

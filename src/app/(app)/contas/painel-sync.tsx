@@ -18,9 +18,9 @@ export function PainelSync({
   const [estado, acao, aCorrer] = useActionState<EstadoAcao>(sincronizarAgora, null);
 
   return (
-    <div className="grid justify-items-start gap-2 sm:justify-items-end">
+    <div className="grid w-full gap-2 sm:w-auto sm:justify-items-end">
       <form action={acao}>
-        <Button type="submit" variant="outline" disabled={aCorrer}>
+        <Button type="submit" variant="outline" className="w-full sm:w-auto" disabled={aCorrer}>
           <RefreshCw className={cn(aCorrer && "animate-spin")} aria-hidden />
           {aCorrer ? "A sincronizar…" : "Sincronizar com Wallet"}
         </Button>

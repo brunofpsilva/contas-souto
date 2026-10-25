@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const mensagem = codigo ? (ERROS[codigo] ?? "Não foi possível entrar. Tenta de novo.") : null;
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8 px-4 py-16">
+    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8 px-4 pt-[max(4rem,env(safe-area-inset-top))] pb-[max(4rem,env(safe-area-inset-bottom))]">
       <div className="space-y-2">
         <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">Casa no Souto</p>
         <h1 className="font-heading text-4xl font-bold tracking-tight">Contas Souto</h1>
