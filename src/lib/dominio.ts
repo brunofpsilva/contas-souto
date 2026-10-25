@@ -13,9 +13,6 @@ export const CATEGORIAS = [
 ] as const;
 export type Categoria = (typeof CATEGORIAS)[number];
 
-export const PESSOAS = ["Ambos", "Rui", "Ana"] as const;
-export type Pessoa = (typeof PESSOAS)[number];
-
 export const ESTADOS = ["previsto", "pago"] as const;
 export type Estado = (typeof ESTADOS)[number];
 

@@ -6,7 +6,7 @@ import { BotaoGoogle } from "./botao-google";
 export const metadata: Metadata = { title: "Entrar" };
 
 const ERROS: Record<string, string> = {
-  AccessDenied: "Este email não tem acesso à Contas Souto. Entra com o email do Rui ou da Ana.",
+  AccessDenied: "Este email não tem acesso à Contas Souto. Entra com um dos emails autorizados.",
   OAuthSignin: "Não foi possível começar o login com o Google. Tenta de novo.",
   OAuthCallback: "O Google não confirmou o login. Tenta de novo.",
   Callback: "Houve um problema a guardar o login. Tenta de novo.",

@@ -31,17 +31,17 @@ describe("validarDespesa (regras da versão antiga)", () => {
     if (!r.ok) expect(Object.keys(r.erros).sort()).toEqual(["descricao", "mes", "valor"]);
   });
 
-  test("normaliza categoria, quem e estado desconhecidos", () => {
-    const r = validarDespesa({ descricao: " Sofá ", valor: "1 200,5", mes: "2026-12", categoria: "?", quem: "?", estado: "?" });
+  test("normaliza categoria e estado desconhecidos", () => {
+    const r = validarDespesa({ descricao: " Sofá ", valor: "1 200,5", mes: "2026-12", categoria: "?", estado: "?" });
     expect(r).toEqual({
       ok: true,
-      despesa: { descricao: "Sofá", valor: 1200.5, mes: "2026-12", categoria: "Outros", quem: "Ambos", estado: "previsto", nota: "", naEscritura: false, naConclusaoObra: false, divisaoId: null },
+      despesa: { descricao: "Sofá", valor: 1200.5, mes: "2026-12", categoria: "Outros", estado: "previsto", nota: "", naEscritura: false, naConclusaoObra: false, divisaoId: null },
     });
   });
 
   test("aceita os valores válidos", () => {
-    const r = validarDespesa({ descricao: "Frigorífico", valor: "899", mes: "2027-01", categoria: "Eletrodomésticos", quem: "Ana", estado: "pago" });
-    expect(r.ok && r.despesa).toMatchObject({ categoria: "Eletrodomésticos", quem: "Ana", estado: "pago" });
+    const r = validarDespesa({ descricao: "Frigorífico", valor: "899", mes: "2027-01", categoria: "Eletrodomésticos", estado: "pago" });
+    expect(r.ok && r.despesa).toMatchObject({ categoria: "Eletrodomésticos", estado: "pago" });
   });
 
   test("recusa textos demasiado longos", () => {

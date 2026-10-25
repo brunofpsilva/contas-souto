@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { CATEGORIAS, LIMITE_DESCRICAO, LIMITE_NOTA, PESSOAS, SEM_DIVISAO } from "@/lib/dominio";
+import { CATEGORIAS, LIMITE_DESCRICAO, LIMITE_NOTA, SEM_DIVISAO } from "@/lib/dominio";
 import { dataCurta, dataDoMarco, MARCOS, type DatasMarcos, type Marco } from "@/lib/escritura";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,6 @@ export interface ValoresDespesa {
   categoria: string;
   /** Id da divisão, ou "nenhuma" (Não aplicável) */
   divisao: string;
-  quem: string;
   estado: string;
   nota: string;
 }
@@ -123,8 +122,6 @@ export function FormDespesa({
           />
         </Campo>
       </div>
-
-      <Segmentos nome="quem" rotulo="Quem paga" valor={v.quem} opcoes={PESSOAS.map((p) => ({ valor: p, texto: p }))} />
 
       <Campo id="nota" rotulo="Nota (opcional)" erro={erros.nota}>
         <Textarea
@@ -242,7 +239,7 @@ function Quando({
   );
 }
 
-/** Poucas opções (Estado, Quem paga): botões lado a lado, escolhe-se com um toque. */
+/** Poucas opções (Estado): botões lado a lado, escolhe-se com um toque. */
 function Segmentos({
   nome,
   rotulo,

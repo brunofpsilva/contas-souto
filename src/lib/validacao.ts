@@ -4,11 +4,9 @@ import {
   LIMITE_DESCRICAO,
   LIMITE_NOME_DIVISAO,
   LIMITE_NOTA,
-  PESSOAS,
   SEM_DIVISAO,
   type Categoria,
   type Estado,
-  type Pessoa,
 } from "./dominio";
 import { mesDaData } from "./escritura";
 import { eMesValido } from "./meses";
@@ -42,7 +40,6 @@ export interface DadosDespesa {
   valor: number;
   mes: string;
   categoria: Categoria;
-  quem: Pessoa;
   estado: Estado;
   nota: string;
   naEscritura: boolean;
@@ -70,7 +67,6 @@ export function validarDespesa(
   const dataMarco = naEscritura ? dataEscritura : naConclusaoObra ? dataConclusaoObra : null;
   const mes = dataMarco ? mesDaData(dataMarco) : String(input.mes ?? "").trim();
   const categoria = CATEGORIAS.find((c) => c === input.categoria) ?? "Outros";
-  const quem = PESSOAS.find((p) => p === input.quem) ?? "Ambos";
   const estado: Estado = input.estado === "pago" ? "pago" : "previsto";
   const nota = String(input.nota ?? "").trim();
   const divisaoId = lerIdDivisao(input.divisao);
@@ -86,7 +82,7 @@ export function validarDespesa(
   if (nota.length > LIMITE_NOTA) erros.nota = `A nota tem no máximo ${LIMITE_NOTA} caracteres.`;
 
   if (Object.keys(erros).length) return { ok: false, erros };
-  return { ok: true, despesa: { descricao, valor: valor!, mes, categoria, quem, estado, nota, naEscritura, naConclusaoObra, divisaoId } };
+  return { ok: true, despesa: { descricao, valor: valor!, mes, categoria, estado, nota, naEscritura, naConclusaoObra, divisaoId } };
 }
 
 /** Id da divisão escolhida no formulário; qualquer outra coisa ("nenhuma", vazio) é Não aplicável. */

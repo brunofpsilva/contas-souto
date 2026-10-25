@@ -71,7 +71,7 @@ export function ListaDespesas({
                     </div>
                     <p className="text-muted-foreground text-xs wrap-break-word">
                       {d.categoria}
-                      {d.divisao && <> · {d.divisao}</>} · {d.quem === "Ambos" ? "Pagam ambos" : `Paga ${d.quem}`}
+                      {d.divisao && <> · {d.divisao}</>}
                       {d.nota && <> · {d.nota}</>}
                     </p>
                     <p className="text-muted-foreground/80 text-xs">

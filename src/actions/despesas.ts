@@ -18,7 +18,7 @@ export type EstadoFormDespesa = {
 const t = schema.despesas;
 
 function lerForm(form: FormData): Record<string, string> {
-  const campos = ["descricao", "valor", "mes", "quando", "categoria", "divisao", "quem", "estado", "nota"] as const;
+  const campos = ["descricao", "valor", "mes", "quando", "categoria", "divisao", "estado", "nota"] as const;
   return Object.fromEntries(campos.map((c) => [c, String(form.get(c) ?? "")]));
 }
 

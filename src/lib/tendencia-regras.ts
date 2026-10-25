@@ -1,5 +1,5 @@
 // Regras da previsão do dia a dia. Os ids são das categorias do Wallet (iguais em todas
-// as contas do Rui e da Ana); os nomes podem mudar no Wallet, os ids não.
+// as contas); os nomes podem mudar no Wallet, os ids não.
 
 export interface RegrasTendencia {
   /** Meses completos usados para salários e gastos mensais. */
@@ -46,7 +46,6 @@ export const REGRAS: RegrasTendencia = {
   categoriaSalario: "5c5c2710-0064-8000-8000-000000000000", // Salários
   categoriaSubsidio: "5c5c2711-0064-8000-8000-000000000000", // Subsídios
   categoriaReembolso: "5c5c2718-0064-8000-8000-000000000000", // Reembolsos
-  // O Extra são os movimentos de Salários sem nota: entra aqui, não em outros rendimentos.
   salariosFixos: lerSalariosFixos(),
   categoriasRenda: [
     "5c5c1f43-0050-8000-8000-000000000000", // Renda v2

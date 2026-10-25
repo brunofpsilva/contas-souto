@@ -82,7 +82,6 @@ export interface DespesaVista {
   valor: number;
   mes: string;
   categoria: string;
-  quem: string;
   estado: "previsto" | "pago";
   nota: string;
   naEscritura: boolean;
@@ -111,7 +110,6 @@ export async function listarDespesas(): Promise<DespesaVista[]> {
     valor: d.valor,
     mes: d.mes,
     categoria: d.categoria,
-    quem: d.quem,
     estado: d.estado,
     nota: d.nota,
     naEscritura: d.naEscritura,

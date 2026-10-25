@@ -14,10 +14,9 @@ import {
   uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
-import { CATEGORIAS, ESTADOS, LIMITE_DESCRICAO, LIMITE_NOME_DIVISAO, LIMITE_NOTA, ORIGENS_SYNC, PESSOAS } from "../lib/dominio";
+import { CATEGORIAS, ESTADOS, LIMITE_DESCRICAO, LIMITE_NOME_DIVISAO, LIMITE_NOTA, ORIGENS_SYNC } from "../lib/dominio";
 
 export const categoriaEnum = pgEnum("categoria", CATEGORIAS);
-export const pessoaEnum = pgEnum("pessoa", PESSOAS);
 export const estadoEnum = pgEnum("estado_despesa", ESTADOS);
 export const origemSyncEnum = pgEnum("origem_sync", ORIGENS_SYNC);
 
@@ -59,7 +58,6 @@ export const despesas = pgTable(
     /** AAAA-MM */
     mes: char({ length: 7 }).notNull(),
     categoria: categoriaEnum().notNull().default("Outros"),
-    quem: pessoaEnum().notNull().default("Ambos"),
     estado: estadoEnum().notNull().default("previsto"),
     nota: varchar({ length: LIMITE_NOTA }).notNull().default(""),
     /**

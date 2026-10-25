@@ -1,5 +1,5 @@
 // Ciclos do orçamento: cada "mês" começa no dia do salário e acaba na véspera do seguinte.
-// O Wallet não deixa mudar o início do mês, por isso o Rui e a Ana datam os movimentos
+// O Wallet não deixa mudar o início do mês, por isso datamos os movimentos
 // dos últimos dias no dia 1 do mês seguinte e escrevem a data verdadeira na nota ("26/9 - ...").
 // Assim, o mês de um movimento no Wallet já é o ciclo; a data verdadeira só serve para saber
 // em que dia do ciclo foi gasto.

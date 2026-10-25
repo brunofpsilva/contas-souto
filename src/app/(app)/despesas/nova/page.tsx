@@ -30,7 +30,6 @@ export default async function NovaDespesaPage({ searchParams }: PageProps<"/desp
           categoria: "Outros",
           // Vindo da página Orçamento (?divisao=ID), já vem escolhida.
           divisao: typeof divisao === "string" ? divisao : "nenhuma",
-          quem: "Ambos",
           estado: "previsto",
           nota: "",
         }}

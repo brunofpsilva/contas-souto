@@ -33,7 +33,6 @@ export default async function EditarDespesaPage({ params }: PageProps<"/despesas
           quando: d.naEscritura ? "escritura" : d.naConclusaoObra ? "obra" : "mes",
           categoria: d.categoria,
           divisao: d.divisaoId != null ? String(d.divisaoId) : "nenhuma",
-          quem: d.quem,
           estado: d.estado,
           nota: d.nota,
         }}
