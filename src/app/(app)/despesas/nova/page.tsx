@@ -10,7 +10,6 @@ export default async function NovaDespesaPage({ searchParams }: PageProps<"/desp
   const [{ adicionada, divisao }, datas, divisoes] = await Promise.all([searchParams, obterDatas(), listarDivisoes()]);
   return (
     <>
-      <h1 className="text-3xl font-bold tracking-tight">Nova despesa</h1>
       {adicionada && (
         <p role="status" className="bg-ok-suave text-ok w-fit rounded-lg px-3 py-2 text-sm">
           Despesa adicionada. Podes adicionar a próxima.

@@ -222,8 +222,8 @@ function Quando({
             ) : (
               <>
                 Ainda não há data {MARCOS[marco!].de}.{" "}
-                <Link href="/contas" className="text-primary underline underline-offset-2">
-                  Define-a em Contas
+                <Link href="/definicoes#datas" className="text-primary underline underline-offset-2">
+                  Definir
                 </Link>
                 .
               </>

@@ -20,7 +20,6 @@ export default async function EditarDespesaPage({ params }: PageProps<"/despesas
 
   return (
     <>
-      <h1 className="text-3xl font-bold tracking-tight">Editar despesa</h1>
       <FormDespesa
         acao={atualizarDespesa.bind(null, d.id)}
         textoBotao="Guardar alterações"

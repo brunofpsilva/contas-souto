@@ -49,6 +49,6 @@ export function dataCurta(data: string, anoAtual: number = anoCorrente()): strin
 export function validarDataEscritura(entrada: unknown): { ok: true; data: string | null } | { ok: false; erro: string } {
   const data = String(entrada ?? "").trim();
   if (!data) return { ok: true, data: null };
-  if (!eDataValida(data)) return { ok: false, erro: "Escolhe uma data válida (AAAA-MM-DD)." };
+  if (!eDataValida(data)) return { ok: false, erro: "Data inválida." };
   return { ok: true, data };
 }

@@ -125,7 +125,7 @@ describe("validarDespesa na conclusão da obra", () => {
   test("sem data da obra não deixa escolher", () => {
     const r = validarDespesa({ descricao: "Empreiteiro", valor: "1", quando: "obra", mes: "2026-11" }, { dataEscritura: "2026-12-15" });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.erros.mes).toMatch(/conclusão da obra/);
+    if (!r.ok) expect(r.erros.mes).toMatch(/fim da obra/);
   });
 
   test("uma data depois do dia do salário fica no ciclo seguinte", () => {

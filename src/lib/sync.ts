@@ -14,7 +14,14 @@ export const MESES_HISTORICO = 12;
 
 export type ResultadoSync =
   | { ok: true; nContas: number; nMovimentos: number | null; walletASincronizar: boolean; avisoMovimentos?: string }
-  | { ok: false; mensagem: string; codigo: string };
+  | {
+      ok: false;
+      /** Mensagem técnica, para o log e para a tabela das sincronizações. O ecrã usa fraseErroSync(codigo). */
+      mensagem: string;
+      codigo: string;
+      /** Minutos até se poder tentar de novo, quando o Wallet os indica. */
+      tentarDaquiMin?: number;
+    };
 
 export async function sincronizar({ origem, por }: { origem: OrigemSync; por?: string }): Promise<ResultadoSync> {
   const agora = Date.now();
@@ -67,7 +74,7 @@ export async function sincronizar({ origem, por }: { origem: OrigemSync; por?: s
         nMovimentos = await atualizarMovimentos(r.contas, new Date());
       } catch (e) {
         avisoMovimentos = e instanceof WalletError ? e.message : "Não foi possível ler os movimentos do Wallet.";
-        if (!(e instanceof WalletError)) console.error("[sync movimentos]", e);
+        console.error("[sync movimentos]", e instanceof WalletError ? `${e.codigo}: ${e.message}` : e);
       }
     }
 
@@ -86,9 +93,11 @@ export async function sincronizar({ origem, por }: { origem: OrigemSync; por?: s
   } catch (e) {
     const mensagem = e instanceof WalletError ? e.message : "Não foi possível ligar ao Wallet.";
     const codigo = e instanceof WalletError ? e.codigo : "desconhecido";
-    if (!(e instanceof WalletError)) console.error("[sync]", e);
+    // O detalhe técnico fica no log; o ecrã mostra uma frase simples (sync-frases.ts).
+    if (e instanceof WalletError) console.error(`[sync] ${codigo}${e.status ? ` (${e.status})` : ""}: ${mensagem}`);
+    else console.error("[sync]", e);
     await db.update(s).set({ terminadaEm: new Date(), ok: false, mensagem, codigoErro: codigo }).where(eq(s.id, registo.id));
-    return { ok: false, mensagem, codigo };
+    return { ok: false, mensagem, codigo, tentarDaquiMin: e instanceof WalletError ? e.tentarDaquiMin : undefined };
   }
 }
 

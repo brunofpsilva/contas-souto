@@ -1072,7 +1072,7 @@ A frase técnica continua a existir em `wallet.ts` e `sync.ts`, para o log e par
 | `sem_ligacao` | O Wallet demorou demasiado a responder. Tenta de novo. / Não foi possível ligar ao Wallet. | Não foi possível ligar ao Wallet. |
 | `formato` | A resposta do Wallet não tem o formato esperado (…). / Há demasiados movimentos para ler de uma vez. | Não foi possível ler os dados do Wallet. |
 | `a_decorrer` | Já está uma sincronização a decorrer. Espera uns segundos. | Já há uma atualização a decorrer. |
-| `demasiado_cedo` | Os saldos foram atualizados há instantes. Tenta daqui a meio minuto. | Saldos atualizados há instantes. |
+| `demasiado_cedo` | Os saldos foram atualizados há instantes. Tenta daqui a meio minuto. | Atualização pedida há instantes. Disponível dentro de meio minuto. |
 | `desconhecido` | Não foi possível ligar ao Wallet. / Erro desconhecido. | Não foi possível ligar ao Wallet. |
 
 Sem os minutos (erro antigo, lido da base de dados): "Disponível dentro de alguns minutos."

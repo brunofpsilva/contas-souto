@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export function BotaoSair() {
   return (
-    <Button variant="ghost" onClick={() => void signOut({ callbackUrl: "/login" })}>
+    <Button variant="outline" onClick={() => void signOut({ callbackUrl: "/login" })}>
       Sair
     </Button>
   );

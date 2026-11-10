@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { BarraOrcamento, LegendaOrcamento, TextoRestante } from "@/components/barra-orcamento";
-import { GraficoSaldo } from "@/components/grafico-saldo";
 import { ListaDespesas } from "@/components/lista-despesas";
 import { totaisPorCategoria } from "@/lib/agrupar";
-import { TabelaTendencia } from "@/components/tabela-tendencia";
-import { ExtratoPrevisto } from "@/components/extrato-previsto";
 import { listarDespesas, listarDivisoes, obterContas, obterDatas, obterTendencia } from "@/lib/dados";
 import { dataCurta, MARCOS } from "@/lib/escritura";
 import { dataHora, euros, maiuscula, textoEstado, type TomEstado } from "@/lib/formato";
@@ -43,15 +40,11 @@ export default async function ResumoPage() {
   const ultimoMes = p.meses.at(-1);
   // No topo: o saldo depois do último marco (a frase da previsão mostra também o fim).
   const saldoFinal = p.fim?.depois ? p.fim.depois.base : ultimoMes ? ultimoMes.saldo : r.disponivel;
-  // Só os rendimentos anuais que caem dentro da previsão (o bónus e o IRS de maio/junho
-  // ficam de fora quando a previsão acaba antes).
-  const anuais = tendencia.anuais.filter((a) => p.meses.some((m) => m.mes.slice(5) === a.mesOrigem.slice(5)));
 
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Resumo</h1>
           <Estado tom={estado.tom}>
             {estado.valor ? (
               <span>
@@ -69,13 +62,13 @@ export default async function ResumoPage() {
           ) : (
             <>
               Sem saldos.{" "}
-              <Link href="/contas" className="text-primary underline underline-offset-2">
+              <Link href="/definicoes" className="text-primary underline underline-offset-2">
                 Sincronizar com Wallet
               </Link>
             </>
           )}
           {sync.ultimoErro && (
-            <Link href="/contas" className="text-destructive ml-2 underline underline-offset-2">
+            <Link href="/definicoes" className="text-destructive ml-2 underline underline-offset-2">
               A última sincronização falhou
             </Link>
           )}
@@ -100,37 +93,11 @@ export default async function ResumoPage() {
           {p.fim
             ? "Sem data da escritura, a previsão vai até à conclusão da obra."
             : "Sem data da escritura nem da conclusão da obra, a previsão mostra os próximos meses."}{" "}
-          <Link href="/contas" className="text-primary underline underline-offset-2">
+          <Link href="/definicoes" className="text-primary underline underline-offset-2">
             {p.fim ? "Definir a data da escritura" : "Definir as datas"}
           </Link>
         </p>
       )}
-
-      <div className="grid gap-3">
-        <ExtratoPrevisto
-          p={p}
-          anuais={anuais}
-          ciclo={tendencia.cicloAtual}
-          gastosPorCiclo={tendencia.gastosPorCiclo}
-          grafico={
-            !p.fim && r.disponivel != null ? (
-            <GraficoSaldo
-              pontos={p.meses.map((m) => ({
-                mes: m.mes,
-                saldo: m.saldo ?? 0,
-                banda: null,
-                saidas: m.saidas,
-                atrasadas: m.atrasadas,
-                entradasPrevistas: m.entradasPrevistas,
-                saidasPrevistas: m.saidasPrevistas,
-              }))}
-              reserva={p.reserva}
-            />
-            ) : null
-          }
-        />
-        <TabelaTendencia t={{ ...tendencia, anuais }} ciclos={tendencia.gastosPorCiclo.filter((g) => p.meses.some((m) => m.mes === g.mes))} />
-      </div>
 
       <section aria-labelledby="titulo-categorias" className="grid gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">

@@ -52,7 +52,7 @@ export type ErrosDespesa = Partial<Record<keyof DadosDespesa, string>>;
 
 /**
  * `dataEscritura` e `dataConclusaoObra` (AAAA-MM-DD) são as datas guardadas nas definições:
- * uma despesa "na escritura" ou "na conclusão da obra" fica com o ciclo dessa data. Sem a
+ * uma despesa "na escritura" ou "no fim da obra" fica com o mês dessa data. Sem a
  * data definida, não se pode escolher esse marco.
  */
 export function validarDespesa(
@@ -76,8 +76,8 @@ export function validarDespesa(
   if (valor == null) erros.valor = "O valor tem de ser um número, por exemplo 1 234,56.";
   else if (valor < 0) erros.valor = "O valor tem de ser igual ou maior que zero.";
   else if (valor >= 1e10) erros.valor = "O valor é demasiado grande.";
-  if (naEscritura && !dataEscritura) erros.mes = "Define primeiro a data da escritura (em Contas).";
-  else if (naConclusaoObra && !dataConclusaoObra) erros.mes = "Define primeiro a data da conclusão da obra (em Contas).";
+  if (naEscritura && !dataEscritura) erros.mes = "Sem data da escritura. Define-se em Definições.";
+  else if (naConclusaoObra && !dataConclusaoObra) erros.mes = "Sem data do fim da obra. Define-se em Definições.";
   else if (!eMesValido(mes)) erros.mes = "Escolhe o mês (AAAA-MM).";
   if (nota.length > LIMITE_NOTA) erros.nota = `A nota tem no máximo ${LIMITE_NOTA} caracteres.`;
 
