@@ -22,12 +22,12 @@ describe("calcularOrcamento", () => {
       ["Sala", 0, 600, 600, -100, 1],
       ["Garagem", 50, 0, 50, null, 1],
     ]);
-    expect(o.naoAplicavel).toMatchObject({ id: null, nome: "Não aplicável", total: 999, orcamento: null, restante: null });
-    // Não aplicável fica de fora; a Garagem (sem orçamento) conta no gasto.
+    expect(o.naoAplicavel).toMatchObject({ id: null, nome: "Sem divisão", total: 999, orcamento: null, restante: null });
+    // Sem divisão fica de fora; a Garagem (sem orçamento) conta no gasto.
     expect(o.geral).toEqual({ orcamento: 1500, pago: 350, porPagar: 800.1, total: 1150.1, restante: 349.9, nExcedidas: 1 });
   });
 
-  test("despesa de uma divisão que já não existe conta como Não aplicável", () => {
+  test("despesa de uma divisão que já não existe conta como Sem divisão", () => {
     const o = calcularOrcamento(divisoes, [{ valor: 10, estado: "pago", divisaoId: 99 }]);
     expect(o.naoAplicavel.total).toBe(10);
     expect(o.geral.total).toBe(0);
@@ -61,11 +61,12 @@ describe("divisão na despesa", () => {
 });
 
 describe("validação das divisões", () => {
-  test("nome: limpa espaços, recusa vazio, comprido e Não aplicável", () => {
+  test("nome: limpa espaços, recusa vazio, comprido e Sem divisão", () => {
     expect(validarNomeDivisao("  Casa   de banho ")).toEqual({ ok: true, nome: "Casa de banho" });
     expect(validarNomeDivisao("").ok).toBe(false);
     expect(validarNomeDivisao("x".repeat(41)).ok).toBe(false);
-    expect(validarNomeDivisao("nao aplicável").ok).toBe(false);
+    expect(validarNomeDivisao("sem divisao").ok).toBe(false);
+    expect(validarNomeDivisao("Não aplicável").ok).toBe(true);
   });
 
   test("orçamento: vazio = sem orçamento", () => {

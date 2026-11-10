@@ -63,7 +63,7 @@ export function ListaDespesas({
                       {d.atrasada && <Etiqueta tom="mau">Atrasada · {mesPorExtenso(d.mes)}</Etiqueta>}
                       {marco && (
                         <Etiqueta tom="info">
-                          Na {MARCOS[marco].nome}
+                          {MARCOS[marco].titulo}
                           {dataMarco ? ` · ${dataCurta(dataMarco)}` : ""}
                         </Etiqueta>
                       )}

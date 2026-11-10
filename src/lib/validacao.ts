@@ -44,7 +44,7 @@ export interface DadosDespesa {
   nota: string;
   naEscritura: boolean;
   naConclusaoObra: boolean;
-  /** null = Não aplicável. A ação confirma que a divisão existe. */
+  /** null = Sem divisão. A ação confirma que a divisão existe. */
   divisaoId: number | null;
 }
 
@@ -85,7 +85,7 @@ export function validarDespesa(
   return { ok: true, despesa: { descricao, valor: valor!, mes, categoria, estado, nota, naEscritura, naConclusaoObra, divisaoId } };
 }
 
-/** Id da divisão escolhida no formulário; qualquer outra coisa ("nenhuma", vazio) é Não aplicável. */
+/** Id da divisão escolhida no formulário; qualquer outra coisa ("nenhuma", vazio) é Sem divisão. */
 export function lerIdDivisao(entrada: unknown): number | null {
   const s = String(entrada ?? "").trim();
   if (!/^\d{1,9}$/.test(s)) return null;
@@ -93,16 +93,16 @@ export function lerIdDivisao(entrada: unknown): number | null {
   return n > 0 ? n : null;
 }
 
-/** Nome de uma divisão: obrigatório, até LIMITE_NOME_DIVISAO, e não pode ser "Não aplicável". */
+/** Nome de uma divisão: obrigatório, até LIMITE_NOME_DIVISAO, e não pode ser "Sem divisão". */
 export function validarNomeDivisao(entrada: unknown): { ok: true; nome: string } | { ok: false; erro: string } {
   const nome = String(entrada ?? "").trim().replace(/\s+/g, " ");
   if (!nome) return { ok: false, erro: "O nome da divisão é obrigatório." };
   if (nome.length > LIMITE_NOME_DIVISAO) return { ok: false, erro: `O nome tem no máximo ${LIMITE_NOME_DIVISAO} caracteres.` };
-  if (chaveNome(nome) === chaveNome(SEM_DIVISAO)) return { ok: false, erro: `"${SEM_DIVISAO}" já existe sempre; escolhe outro nome.` };
+  if (chaveNome(nome) === chaveNome(SEM_DIVISAO)) return { ok: false, erro: `«${SEM_DIVISAO}» é um nome reservado.` };
   return { ok: true, nome };
 }
 
-/** Para comparar nomes sem maiúsculas nem acentos ("Não aplicável" = "nao aplicavel"). */
+/** Para comparar nomes sem maiúsculas nem acentos ("Sem divisão" = "sem divisao"). */
 export function chaveNome(nome: string): string {
   return nome.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 }

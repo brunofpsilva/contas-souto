@@ -122,7 +122,7 @@ function LinhaDivisao({
               className="flex flex-wrap items-center gap-2 max-sm:w-full sm:justify-end sm:gap-1"
             >
               <span className="text-sm max-sm:w-full">
-                Apagar?{l.nDespesas > 0 && ` ${l.nDespesas} despesa${l.nDespesas === 1 ? " passa" : "s passam"} a Não aplicável.`}
+                Apagar?{l.nDespesas > 0 && ` ${l.nDespesas} despesa${l.nDespesas === 1 ? " fica" : "s ficam"} sem divisão.`}
               </span>
               <Button type="button" size="sm" variant="destructive" className="max-sm:h-10 max-sm:flex-1" disabled={aApagar} onClick={apagar}>
                 {aApagar ? "A apagar…" : "Sim, apagar"}

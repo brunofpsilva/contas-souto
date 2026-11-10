@@ -26,6 +26,8 @@
   --color-negativo-suave: var(--negativo-suave);
   --color-grafico-pago: var(--grafico-pago);
   --color-grafico-por-pagar: var(--grafico-por-pagar);
+  /* Véu por trás dos diálogos. */
+  --color-veu: var(--veu);
 
   /* Os mesmos valores com os nomes que os componentes shadcn (components/ui) esperam. */
   --color-background: var(--fundo);
@@ -97,6 +99,7 @@
   --grafico-pago: #16475f;
   --grafico-por-pagar: #488ba8;
   --sombra-flutuante: 0 8px 24px rgb(0 0 0 / 0.12);
+  --veu: rgb(31 28 24 / 0.45);
   color-scheme: light;
 }
 
@@ -126,6 +129,7 @@
     --grafico-pago: #86cbe6;
     --grafico-por-pagar: #40829d;
     --sombra-flutuante: 0 8px 24px rgb(0 0 0 / 0.5);
+    --veu: rgb(0 0 0 / 0.6);
     color-scheme: dark;
   }
 }
@@ -150,6 +154,7 @@
   --grafico-pago: #86cbe6;
   --grafico-por-pagar: #40829d;
   --sombra-flutuante: 0 8px 24px rgb(0 0 0 / 0.5);
+  --veu: rgb(0 0 0 / 0.6);
   color-scheme: dark;
 }
 

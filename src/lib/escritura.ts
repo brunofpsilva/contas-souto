@@ -1,14 +1,15 @@
 // Datas da escritura e da conclusão da obra: validação e formatos. As datas são texto "AAAA-MM-DD" e nunca
 // passam por new Date("AAAA-MM-DD"), que as leria em UTC e podia mudar o dia.
 import { cicloDoDia } from "./ciclo";
-import type { Mes } from "./meses";
+import { anoCorrente, MESES_CURTOS, type Mes } from "./meses";
 
 /** Datas em que se pagam despesas marcadas: a escritura e a conclusão da obra. */
 export type Marco = "escritura" | "obra";
 
-export const MARCOS: Record<Marco, { nome: string; titulo: string; depois: string }> = {
-  escritura: { nome: "escritura", titulo: "Escritura", depois: "Depois da escritura" },
-  obra: { nome: "conclusão da obra", titulo: "Conclusão da obra", depois: "Depois da obra" },
+/** Como cada marco se escreve: sozinho ("Escritura") e dentro de uma frase. */
+export const MARCOS: Record<Marco, { titulo: string; em: string; depois: string; de: string; ate: string }> = {
+  escritura: { titulo: "Escritura", em: "na escritura", depois: "depois da escritura", de: "da escritura", ate: "até à escritura" },
+  obra: { titulo: "Fim da obra", em: "no fim da obra", depois: "depois da obra", de: "do fim da obra", ate: "até ao fim da obra" },
 };
 
 /** Datas guardadas nas definições (AAAA-MM-DD ou null). */
@@ -23,7 +24,6 @@ export function dataDoMarco(tipo: Marco, datas: DatasMarcos): string | null {
 }
 
 const RE_DATA = /^(\d{4})-(\d{2})-(\d{2})$/;
-const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 export function eDataValida(v: string): boolean {
   const m = RE_DATA.exec(v);
@@ -39,10 +39,10 @@ export function mesDaData(data: string): Mes {
   return cicloDoDia(data);
 }
 
-/** "12 dez 2026" */
-export function dataCurta(data: string): string {
+/** "12 dez" no ano corrente, "15 jan 2027" nos outros. */
+export function dataCurta(data: string, anoAtual: number = anoCorrente()): string {
   const [a, m, d] = data.split("-").map(Number);
-  return `${d} ${MESES[m - 1]} ${a}`;
+  return a === anoAtual ? `${d} ${MESES_CURTOS[m - 1]}` : `${d} ${MESES_CURTOS[m - 1]} ${a}`;
 }
 
 /** Vazio apaga a data (null). */

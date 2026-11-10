@@ -7,7 +7,7 @@ import { TabelaTendencia } from "@/components/tabela-tendencia";
 import { ExtratoPrevisto } from "@/components/extrato-previsto";
 import { listarDespesas, listarDivisoes, obterContas, obterDatas, obterTendencia } from "@/lib/dados";
 import { dataCurta, MARCOS } from "@/lib/escritura";
-import { dataHora, euros, textoEstado, type TomEstado } from "@/lib/formato";
+import { dataHora, euros, maiuscula, textoEstado, type TomEstado } from "@/lib/formato";
 import { mesPorExtenso } from "@/lib/meses";
 import { PRIVADO } from "@/lib/privacidade";
 import { calcularOrcamento } from "@/lib/orcamento";
@@ -37,7 +37,7 @@ export default async function ResumoPage() {
   const maxCategoria = Math.max(1, ...categorias.map((c) => c.total));
   const porPagar = despesas.filter((d) => d.estado !== "pago");
   const orcamento = calcularOrcamento(divisoes, despesas);
-  // Só as divisões com orçamento ou com despesas (e Não aplicável se tiver despesas).
+  // Só as divisões com orçamento ou com despesas (e Sem divisão se tiver despesas).
   const linhasOrcamento = [...orcamento.divisoes, orcamento.naoAplicavel].filter((l) => l.orcamento != null || l.nDespesas > 0);
   const nContas = contas.contas.filter((c) => c.incluida).length;
   const ultimoMes = p.meses.at(-1);
@@ -87,7 +87,7 @@ export default async function ResumoPage() {
         <Numero rotulo="Por pagar" valor={euros(r.porPagar)} nota={`${r.nPorPagar} despesa${r.nPorPagar === 1 ? "" : "s"}`} />
         <Numero rotulo="Já pago" valor={euros(r.pago)} nota={`${r.nPagas} despesa${r.nPagas === 1 ? "" : "s"}`} />
         <Numero
-          rotulo={p.fim ? MARCOS[p.fim.tipo].depois : "Saldo no fim"}
+          rotulo={p.fim ? maiuscula(MARCOS[p.fim.tipo].depois) : "Saldo no fim"}
           valor={euros(saldoFinal)}
           nota={p.fim ? dataCurta(p.fim.data) : ultimoMes ? mesPorExtenso(ultimoMes.mes) : ""}
           mau={saldoFinal != null && saldoFinal < 0}

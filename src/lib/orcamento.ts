@@ -17,7 +17,7 @@ export interface DespesaOrcamento {
 }
 
 export interface LinhaOrcamento {
-  /** null = Não aplicável */
+  /** null = Sem divisão */
   id: number | null;
   nome: string;
   orcamento: number | null;
@@ -35,7 +35,7 @@ export interface ResumoOrcamento {
   naoAplicavel: LinhaOrcamento;
   /**
    * Orçamento geral: soma dos orçamentos das divisões; o gasto é o de todas as divisões
-   * (as que não têm orçamento também contam). Não aplicável fica de fora.
+   * (as que não têm orçamento também contam). Sem divisão fica de fora.
    */
   geral: { orcamento: number; pago: number; porPagar: number; total: number; restante: number; nExcedidas: number };
 }
@@ -46,7 +46,7 @@ export function calcularOrcamento(divisoes: readonly DivisaoOrcamento[], despesa
   const somas = new Map<number | null, { pago: number; porPagar: number; n: number }>();
   const ids = new Set(divisoes.map((d) => d.id));
   for (const d of despesas) {
-    // Uma divisão que já não existe conta como Não aplicável (a BD já faz isto ao apagar).
+    // Uma divisão que já não existe conta como Sem divisão (a BD já faz isto ao apagar).
     const chave = d.divisaoId != null && ids.has(d.divisaoId) ? d.divisaoId : null;
     const s = somas.get(chave) ?? { pago: 0, porPagar: 0, n: 0 };
     if (d.estado === "pago") s.pago += d.valor;

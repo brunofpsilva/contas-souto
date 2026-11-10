@@ -30,7 +30,7 @@ export const utilizadores = pgTable("utilizadores", {
   ultimoLogin: agora(),
 });
 
-/** Divisões da casa (editáveis na app). Uma despesa sem divisão é "Não aplicável". */
+/** Divisões da casa (editáveis na app). Uma despesa sem divisão é "Sem divisão". */
 export const divisoes = pgTable(
   "divisoes",
   {
@@ -67,7 +67,7 @@ export const despesas = pgTable(
     naEscritura: boolean().notNull().default(false),
     /** Paga na conclusão da obra (ao empreiteiro): como `naEscritura`, mas com a data da obra. */
     naConclusaoObra: boolean().notNull().default(false),
-    /** Divisão da casa; null = Não aplicável (também quando a divisão é apagada). */
+    /** Divisão da casa; null = Sem divisão (também quando a divisão é apagada). */
     divisaoId: integer().references(() => divisoes.id, { onDelete: "set null" }),
 
     criadoPor: text().references(() => utilizadores.email),

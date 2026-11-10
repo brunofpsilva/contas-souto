@@ -14,7 +14,9 @@ describe("datas da escritura", () => {
 
   test("mês e formato curto sem passar por UTC", () => {
     expect(mesDaData("2026-12-01")).toBe("2026-12");
-    expect(dataCurta("2026-12-01")).toBe("1 dez 2026");
+    // O ano só aparece quando não é o corrente.
+    expect(dataCurta("2026-12-01", 2026)).toBe("1 dez");
+    expect(dataCurta("2027-01-15", 2026)).toBe("15 jan 2027");
   });
 });
 

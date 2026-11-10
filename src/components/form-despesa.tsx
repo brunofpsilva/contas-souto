@@ -10,6 +10,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIAS, LIMITE_DESCRICAO, LIMITE_NOTA, SEM_DIVISAO } from "@/lib/dominio";
 import { dataCurta, dataDoMarco, MARCOS, type DatasMarcos, type Marco } from "@/lib/escritura";
+import { maiuscula } from "@/lib/formato";
 import { cn } from "@/lib/utils";
 
 export interface ValoresDespesa {
@@ -19,7 +20,7 @@ export interface ValoresDespesa {
   /** "mes", "escritura" ou "obra" */
   quando: string;
   categoria: string;
-  /** Id da divisão, ou "nenhuma" (Não aplicável) */
+  /** Id da divisão, ou "nenhuma" (Sem divisão) */
   divisao: string;
   estado: string;
   nota: string;
@@ -115,7 +116,7 @@ export function FormDespesa({
           <Escolha
             id="divisao"
             nome="divisao"
-            // Uma divisão apagada entretanto volta a Não aplicável.
+            // Uma divisão apagada entretanto volta a Sem divisão.
             valor={divisoes.some((d) => String(d.id) === v.divisao) ? v.divisao : "nenhuma"}
             opcoes={[...divisoes.map((d) => String(d.id)), "nenhuma"]}
             rotulos={{ ...Object.fromEntries(divisoes.map((d) => [String(d.id), d.nome])), nenhuma: SEM_DIVISAO }}
@@ -175,7 +176,7 @@ function Quando({
     { valor: "mes", texto: "Num mês" },
     ...marcos.map((tipo) => {
       const data = dataDoMarco(tipo, datas);
-      return { valor: tipo, texto: `Na ${MARCOS[tipo].nome}${data ? ` (${dataCurta(data)})` : ""}` };
+      return { valor: tipo, texto: `${maiuscula(MARCOS[tipo].em)}${data ? ` (${dataCurta(data)})` : ""}` };
     }),
   ];
   const marco = quando === "mes" ? null : (quando as Marco);
@@ -217,10 +218,10 @@ function Quando({
           <input type="hidden" name="mes" value={mes} />
           <p className="text-muted-foreground text-xs">
             {dataMarco ? (
-              `Se a data da ${MARCOS[marco!].nome} mudar, esta despesa acompanha.`
+              `Se a data ${MARCOS[marco!].de} mudar, esta despesa acompanha.`
             ) : (
               <>
-                Ainda não há data da {MARCOS[marco!].nome}.{" "}
+                Ainda não há data {MARCOS[marco!].de}.{" "}
                 <Link href="/contas" className="text-primary underline underline-offset-2">
                   Define-a em Contas
                 </Link>

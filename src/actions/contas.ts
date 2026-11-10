@@ -69,13 +69,12 @@ async function guardarDataMarco(tipo: Marco, form: FormData): Promise<EstadoAcao
   });
 
   revalidatePath("/", "layout");
-  const nome = MARCOS[tipo].nome;
   const plural = (n: number) => `${n} despesa${n === 1 ? "" : "s"}`;
   const extra = !nDespesas
     ? ""
     : data
-      ? ` ${plural(nDespesas)} da ${nome} passaram para ${mesPorExtenso(mesDaData(data))}.`
-      : ` ${plural(nDespesas)} deixaram de estar na ${nome} e ficaram com o mês que tinham.`;
+      ? ` ${plural(nDespesas)} ${MARCOS[tipo].de} passaram para ${mesPorExtenso(mesDaData(data))}.`
+      : ` ${plural(nDespesas)} deixaram de estar ${MARCOS[tipo].em} e ficaram com o mês que tinham.`;
   return { ok: true, mensagem: `Guardado.${extra}`, quando: Date.now() };
 }
 

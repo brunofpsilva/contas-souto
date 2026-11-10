@@ -11,14 +11,14 @@ import { cn } from "@/lib/utils";
 
 const TEXTOS: Record<Marco, { explicacao: string; rotulo: string; botao: string }> = {
   escritura: {
-    explicacao: "A previsão vai de hoje até esta data (ou até à conclusão da obra, se for depois).",
+    explicacao: "A previsão vai de hoje até esta data (ou até ao fim da obra, se for depois).",
     rotulo: "Data da escritura",
     botao: "Guardar escritura",
   },
   obra: {
     explicacao: "Dia em que se paga o fim da obra ao empreiteiro. Se for depois da escritura, a previsão vai até aqui.",
-    rotulo: "Data da conclusão da obra",
-    botao: "Guardar conclusão da obra",
+    rotulo: "Data do fim da obra",
+    botao: "Guardar fim da obra",
   },
 };
 
@@ -39,7 +39,7 @@ export function FormMarco({
     null,
   );
   const t = TEXTOS[tipo];
-  const nome = MARCOS[tipo].nome;
+  const em = MARCOS[tipo].em;
   const s = nDespesas === 1 ? "" : "s";
 
   return (
@@ -51,8 +51,8 @@ export function FormMarco({
         <p className="text-muted-foreground text-sm">
           {t.explicacao}{" "}
           {nDespesas
-            ? `${nDespesas} despesa${s} paga${s} na ${nome} (${euros(totalDespesas)}); mudam de mês com a data.`
-            : `Nenhuma despesa marcada como paga na ${nome}.`}
+            ? `${nDespesas} despesa${s} paga${s} ${em} (${euros(totalDespesas)}); mudam de mês com a data.`
+            : `Nenhuma despesa marcada como paga ${em}.`}
         </p>
       </div>
 

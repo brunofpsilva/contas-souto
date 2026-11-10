@@ -1,5 +1,5 @@
 import { dataCurta, MARCOS } from "@/lib/escritura";
-import { euros } from "@/lib/formato";
+import { euros, maiuscula } from "@/lib/formato";
 import { mesCurto, mesPorExtenso } from "@/lib/meses";
 import type { Previsao } from "@/lib/previsao";
 import { PRIVADO } from "@/lib/privacidade";
@@ -103,7 +103,7 @@ export function ExtratoPrevisto({
   // Com despesas depois do último marco, a previsão continua até ao mês da última.
   const continua = e != null && ultimoMes > e.mes;
   const noFim = `no fim de ${mesPorExtenso(ultimoMes)}`;
-  const titulo = !e ? "Saldo previsto" : continua ? `Até ao fim de ${mesPorExtenso(ultimoMes)}` : `Até à ${MARCOS[e.tipo].nome} · ${dataCurta(e.data)}`;
+  const titulo = !e ? "Saldo previsto" : continua ? `Até ao fim de ${mesPorExtenso(ultimoMes)}` : `${maiuscula(MARCOS[e.tipo].ate)} · ${dataCurta(e.data)}`;
 
   return (
     <section aria-labelledby="titulo-extrato" className="bg-card grid gap-4 rounded-xl border p-4">
@@ -115,13 +115,13 @@ export function ExtratoPrevisto({
           <p className="text-sm">
             {e && continua && e.depois ? (
               <>
-                Ficam <strong className={cn("tabular-nums", PRIVADO)}>{inteiro(e.depois.base)}</strong> depois da{" "}
-                {MARCOS[e.tipo].nome} e <strong className={cn("tabular-nums", PRIVADO)}>{inteiro(final)}</strong> {noFim}
+                Ficam <strong className={cn("tabular-nums", PRIVADO)}>{inteiro(e.depois.base)}</strong> {MARCOS[e.tipo].depois} e{" "}
+                <strong className={cn("tabular-nums", PRIVADO)}>{inteiro(final)}</strong> {noFim}
               </>
             ) : (
               <>
                 Ficam <strong className={cn("tabular-nums", PRIVADO)}>{inteiro(final)}</strong>{" "}
-                {e ? `depois da ${MARCOS[e.tipo].nome}` : noFim}
+                {e ? MARCOS[e.tipo].depois : noFim}
               </>
             )}
             {folga != null && (

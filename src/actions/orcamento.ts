@@ -75,7 +75,7 @@ export async function guardarDivisoes(_anterior: EstadoAcao, form: FormData): Pr
 
 export type ResultadoApagar = { ok: true; mensagem: string } | { ok: false; mensagem: string };
 
-/** Apaga a divisão; as despesas dela passam a Não aplicável (a BD põe divisao_id a null). */
+/** Apaga a divisão; as despesas dela ficam sem divisão (a BD põe divisao_id a null). */
 export async function apagarDivisao(id: number): Promise<ResultadoApagar> {
   await exigirUtilizador();
   if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) return { ok: false, mensagem: "Pedido inválido." };
@@ -87,6 +87,6 @@ export async function apagarDivisao(id: number): Promise<ResultadoApagar> {
   });
   revalidatePath("/", "layout");
   if (!r.nome) return { ok: false, mensagem: "Esta divisão já tinha sido apagada." };
-  const extra = r.n ? ` ${r.n} despesa${r.n === 1 ? " passou" : "s passaram"} a Não aplicável.` : "";
+  const extra = r.n ? ` ${r.n} despesa${r.n === 1 ? " ficou" : "s ficaram"} sem divisão.` : "";
   return { ok: true, mensagem: `Divisão "${r.nome}" apagada.${extra}` };
 }

@@ -86,7 +86,7 @@ export interface DespesaVista {
   nota: string;
   naEscritura: boolean;
   naConclusaoObra: boolean;
-  /** null = Não aplicável */
+  /** null = Sem divisão */
   divisaoId: number | null;
   divisao: string | null;
   criadoPor: string | null;

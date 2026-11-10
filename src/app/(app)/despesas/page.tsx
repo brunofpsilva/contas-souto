@@ -22,7 +22,7 @@ export default async function DespesasPage({ searchParams }: PageProps<"/despesa
   const filtro = FILTROS.find((f) => f.valor === ver)?.valor ?? "todas";
   const [todas, datas, divisoes] = await Promise.all([listarDespesas(), obterDatas(), listarDivisoes()]);
   const mesAtual = cicloDe(new Date());
-  // ?divisao=ID ou ?divisao=nenhuma (Não aplicável); outra coisa não filtra.
+  // ?divisao=ID ou ?divisao=nenhuma (Sem divisão); outra coisa não filtra.
   const daDivisao = divisao === "nenhuma" ? { id: null, nome: SEM_DIVISAO } : divisoes.find((d) => String(d.id) === divisao);
   const lista = todas.filter(
     (d) =>

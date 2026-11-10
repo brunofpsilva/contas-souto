@@ -29,7 +29,7 @@ export function somarMeses(mes: string, n: number): Mes {
   return `${ano}-${String(mm).padStart(2, "0")}` as Mes;
 }
 
-const CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+export const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const LONGOS = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
@@ -41,8 +41,19 @@ export function mesPorExtenso(mes: string): string {
   return `${LONGOS[m - 1]} de ${a}`;
 }
 
-/** "dez 26" (eixos dos gráficos e tabelas estreitas) */
+/** "dez 26" (só no eixo do gráfico) */
 export function mesCurto(mes: string): string {
   const [a, m] = mes.split("-").map(Number);
-  return `${CURTOS[m - 1]} ${String(a).slice(-2)}`;
+  return `${MESES_CURTOS[m - 1]} ${String(a).slice(-2)}`;
+}
+
+/** Ano corrente, na hora de Lisboa. */
+export function anoCorrente(): number {
+  return Number(diaDe(new Date()).slice(0, 4));
+}
+
+/** "dezembro" no ano corrente, "janeiro de 2027" nos outros (listas e títulos de mês). */
+export function mesLongo(mes: string, anoAtual: number = anoCorrente()): string {
+  const [a, m] = mes.split("-").map(Number);
+  return a === anoAtual ? LONGOS[m - 1] : `${LONGOS[m - 1]} de ${a}`;
 }
