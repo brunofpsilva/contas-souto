@@ -24,7 +24,7 @@ export function FormDivisoes({ linhas, naoAplicavel }: { linhas: LinhaOrcamento[
   return (
     <section aria-labelledby="titulo-divisoes" className="grid gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="titulo-divisoes" className="font-heading text-lg font-bold">
+        <h2 id="titulo-divisoes" className="text-lg font-bold">
           Divisões
         </h2>
         <LegendaOrcamento />
@@ -109,7 +109,7 @@ function LinhaDivisao({
               autoComplete="off"
               defaultValue={valorCampo(l.orcamento)}
               placeholder="sem orçamento"
-              className="pr-8 font-mono tabular-nums"
+              className="pr-8 tabular-nums"
             />
             <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm">€</span>
           </div>
@@ -169,8 +169,8 @@ function LinhaDivisao({
 function Totais({ l }: { l: LinhaOrcamento }) {
   const href = `/despesas?divisao=${l.id ?? "nenhuma"}`;
   return (
-    <span className="text-muted-foreground font-mono text-xs tabular-nums">
-      <Link href={href} className="text-primary -my-2 inline-block py-2 font-sans underline-offset-2 hover:underline">
+    <span className="text-muted-foreground text-xs tabular-nums">
+      <Link href={href} className="text-primary -my-2 inline-block py-2 underline-offset-2 hover:underline">
         {l.nDespesas} despesa{l.nDespesas === 1 ? "" : "s"}
       </Link>
       {l.pago > 0 && <> · pago {euros(l.pago)}</>}
@@ -205,7 +205,7 @@ export function FormNovaDivisao() {
             Orçamento máximo
           </Label>
           <div className="relative">
-            <Input id="nova-orcamento" name="orcamento" inputMode="decimal" autoComplete="off" placeholder="opcional" className="pr-8 font-mono tabular-nums" />
+            <Input id="nova-orcamento" name="orcamento" inputMode="decimal" autoComplete="off" placeholder="opcional" className="pr-8 tabular-nums" />
             <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm">€</span>
           </div>
         </div>

@@ -1,7 +1,7 @@
 // Desenho do ícone da app (usado pelo icon.tsx e pelo apple-icon.tsx).
 // O texto fica dentro dos 70% centrais, para funcionar também como ícone "maskable".
-
-export const COR_ICONE = "#1f6b5c";
+// As cores são as da primária do tema claro (um ícone só tem uma versão).
+import { CORES } from "./tema";
 
 export function DesenhoIcone({ tamanho }: { tamanho: number }) {
   const pequeno = tamanho < 64;
@@ -14,8 +14,8 @@ export function DesenhoIcone({ tamanho }: { tamanho: number }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: COR_ICONE,
-        color: "#ffffff",
+        background: CORES.claro.primaria,
+        color: CORES.claro.sobrePrimaria,
         borderRadius: pequeno ? tamanho * 0.2 : 0,
         fontWeight: 700,
         letterSpacing: "-0.02em",

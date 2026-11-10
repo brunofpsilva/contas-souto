@@ -32,7 +32,7 @@ export function FormGastos({ ciclos }: { ciclos: GastoCiclo[] }) {
               autoComplete="off"
               defaultValue={c.editado != null ? String(c.editado).replace(".", ",") : ""}
               placeholder={String(Math.round(c.automatico))}
-              className="font-mono tabular-nums"
+              className="tabular-nums"
             />
             <span className="text-muted-foreground col-span-2 text-xs sm:col-span-1">
               automático {inteiro(c.automatico)}

@@ -108,19 +108,19 @@ export function ExtratoPrevisto({
   return (
     <section aria-labelledby="titulo-extrato" className="bg-card grid gap-4 rounded-xl border p-4">
       <div className="grid gap-1">
-        <h2 id="titulo-extrato" className="font-heading font-bold">
+        <h2 id="titulo-extrato" className="font-bold">
           {titulo}
         </h2>
         {final != null && disponivel != null && (
           <p className="text-sm">
             {e && continua && e.depois ? (
               <>
-                Ficam <strong className={cn("font-mono tabular-nums", PRIVADO)}>{inteiro(e.depois.base)}</strong> depois da{" "}
-                {MARCOS[e.tipo].nome} e <strong className={cn("font-mono tabular-nums", PRIVADO)}>{inteiro(final)}</strong> {noFim}
+                Ficam <strong className={cn("tabular-nums", PRIVADO)}>{inteiro(e.depois.base)}</strong> depois da{" "}
+                {MARCOS[e.tipo].nome} e <strong className={cn("tabular-nums", PRIVADO)}>{inteiro(final)}</strong> {noFim}
               </>
             ) : (
               <>
-                Ficam <strong className={cn("font-mono tabular-nums", PRIVADO)}>{inteiro(final)}</strong>{" "}
+                Ficam <strong className={cn("tabular-nums", PRIVADO)}>{inteiro(final)}</strong>{" "}
                 {e ? `depois da ${MARCOS[e.tipo].nome}` : noFim}
               </>
             )}
@@ -145,7 +145,7 @@ export function ExtratoPrevisto({
         <ol aria-label="Saldo previsto mês a mês" className="-mx-4 border-y sm:hidden">
           <li className="flex items-baseline justify-between gap-3 border-b px-4 py-2.5">
             <span className="text-muted-foreground text-sm">Hoje</span>
-            <span className="font-mono text-sm tabular-nums">
+            <span className="text-sm tabular-nums">
               <span className={PRIVADO}>{inteiro(disponivel)}</span>
             </span>
           </li>
@@ -158,7 +158,7 @@ export function ExtratoPrevisto({
                   <span className={cn("text-sm first-letter:uppercase", l.destaque && "font-medium")}>{l.rotuloLongo}</span>
                   <span
                     className={cn(
-                      "font-mono text-sm tabular-nums whitespace-nowrap",
+                      "text-sm tabular-nums whitespace-nowrap",
                       l.destaque && "font-semibold",
                       negativo && "text-destructive",
                       abaixo && "text-aviso",
@@ -182,7 +182,7 @@ export function ExtratoPrevisto({
           <li className="bg-muted/40 grid gap-1 px-4 py-2.5">
             <div className="flex items-baseline justify-between gap-3 font-semibold">
               <span className="text-sm">Total</span>
-              <span className="font-mono text-sm tabular-nums">
+              <span className="text-sm tabular-nums">
                 <span className={PRIVADO}>{euros(final, { inteiro: true })}</span>
               </span>
             </div>
@@ -201,9 +201,9 @@ export function ExtratoPrevisto({
                 <th scope="col" className="py-2 pr-4 pl-3 text-right font-medium whitespace-nowrap">Saldo no fim</th>
               </tr>
             </thead>
-            <tbody className="font-mono tabular-nums">
+            <tbody className="tabular-nums">
               <tr className="border-b">
-                <th scope="row" className="text-muted-foreground py-1.5 pr-3 pl-4 text-left font-sans font-normal">Hoje</th>
+                <th scope="row" className="text-muted-foreground py-1.5 pr-3 pl-4 text-left font-normal">Hoje</th>
                 {p.comFluxos && <td />}
                 {p.comFluxos && <td />}
                 <td />
@@ -216,7 +216,7 @@ export function ExtratoPrevisto({
                 const abaixo = !negativo && p.reserva > 0 && l.saldo != null && l.saldo < p.reserva;
                 return (
                   <tr key={l.chave} className={cn("border-b align-top", l.destaque && "bg-secondary/60")}>
-                    <th scope="row" className="py-1.5 pr-3 pl-4 text-left font-sans font-normal">
+                    <th scope="row" className="py-1.5 pr-3 pl-4 text-left font-normal">
                       <span className={cn("whitespace-nowrap", l.destaque && "font-medium")}>{l.rotulo}</span>
                       {l.notas.map((n, i) => (
                         <span key={i} className="text-muted-foreground block text-xs">
@@ -240,15 +240,15 @@ export function ExtratoPrevisto({
                       )}
                     >
                       <span className={PRIVADO}>{euros(l.saldo, { inteiro: true })}</span>
-                      {abaixo && <span className="block font-sans text-xs">abaixo da reserva</span>}
+                      {abaixo && <span className="block text-xs">abaixo da reserva</span>}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
-            <tfoot className="font-mono tabular-nums">
+            <tfoot className="tabular-nums">
               <tr className="bg-muted/40 font-semibold">
-                <th scope="row" className="py-2 pr-3 pl-4 text-left font-sans">Total</th>
+                <th scope="row" className="py-2 pr-3 pl-4 text-left">Total</th>
                 {p.comFluxos && (
                   <Celula tom="entra" privado>
                     {mais(total.entra)}
@@ -288,7 +288,7 @@ function Movimentos({ entra, gastos, casa }: { entra: number; gastos: number; ca
     <p className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
       {itens.map((i) => (
         <span key={i.rotulo} className="whitespace-nowrap">
-          {i.rotulo} <span className={cn("font-mono tabular-nums", i.tom, i.privado && PRIVADO)}>{i.texto}</span>
+          {i.rotulo} <span className={cn("tabular-nums", i.tom, i.privado && PRIVADO)}>{i.texto}</span>
         </span>
       ))}
     </p>

@@ -30,20 +30,20 @@ export function ListaDespesas({
       {grupos.map((g) => (
         <section key={g.mes} aria-labelledby={`mes-${g.mes}`} className="grid gap-2">
           <header className="flex flex-wrap items-baseline justify-between gap-x-4 px-1">
-            <h3 id={`mes-${g.mes}`} className="font-heading font-bold first-letter:uppercase">
+            <h3 id={`mes-${g.mes}`} className="font-bold first-letter:uppercase">
               {mesPorExtenso(g.mes)}
               {g.mes === mesAtual && <span className="text-muted-foreground ml-2 text-xs font-normal">mês atual</span>}
             </h3>
             <p className="text-muted-foreground text-xs">
               {g.porPagar > 0 && (
                 <>
-                  por pagar <span className="text-foreground font-mono tabular-nums">{euros(g.porPagar)}</span>
+                  por pagar <span className="text-foreground tabular-nums">{euros(g.porPagar)}</span>
                 </>
               )}
               {g.porPagar > 0 && g.pago > 0 && " · "}
               {g.pago > 0 && (
                 <>
-                  pago <span className="font-mono tabular-nums">{euros(g.pago)}</span>
+                  pago <span className="tabular-nums">{euros(g.pago)}</span>
                 </>
               )}
             </p>
@@ -85,7 +85,7 @@ export function ListaDespesas({
                   </div>
                   <span
                     className={cn(
-                      "text-right font-mono font-medium tabular-nums whitespace-nowrap",
+                      "text-right font-medium tabular-nums whitespace-nowrap",
                       pago && "text-muted-foreground line-through decoration-1",
                     )}
                   >

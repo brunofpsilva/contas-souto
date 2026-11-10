@@ -66,7 +66,7 @@ export function FormContas({
       <input type="hidden" name="selecao" value={alterou || escolhaManual ? "manual" : "manter"} />
       <section className="grid gap-3" aria-labelledby="titulo-contas">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="titulo-contas" className="font-heading text-lg font-bold">
+          <h2 id="titulo-contas" className="text-lg font-bold">
             Contas que contam
           </h2>
           <p className="text-muted-foreground text-sm">
@@ -100,7 +100,7 @@ export function FormContas({
                         {c.moeda !== "EUR" && ` · ${c.moeda}`}
                       </span>
                     </span>
-                    <span className={cn("font-mono text-sm tabular-nums whitespace-nowrap", c.saldo < 0 && "text-destructive", PRIVADO)}>
+                    <span className={cn("text-sm tabular-nums whitespace-nowrap", c.saldo < 0 && "text-destructive", PRIVADO)}>
                       {c.moeda === "EUR" ? euros(c.saldo) : `${c.saldo.toLocaleString("pt-PT")} ${c.moeda}`}
                     </span>
                   </Label>
@@ -109,7 +109,7 @@ export function FormContas({
             })}
             <li className="bg-muted/40 flex items-center justify-between gap-3 px-4 py-3">
               <span className="font-medium">Disponível hoje</span>
-              <span className={cn("font-mono font-medium tabular-nums", PRIVADO)}>{euros(total)}</span>
+              <span className={cn("font-medium tabular-nums", PRIVADO)}>{euros(total)}</span>
             </li>
           </ul>
         )}
@@ -121,7 +121,7 @@ export function FormContas({
       </section>
 
       <section className="grid max-w-sm gap-2" aria-labelledby="titulo-reserva">
-        <h2 id="titulo-reserva" className="font-heading text-lg font-bold">
+        <h2 id="titulo-reserva" className="text-lg font-bold">
           Reserva mínima
         </h2>
         <p className="text-muted-foreground text-sm">
@@ -135,7 +135,7 @@ export function FormContas({
             defaultValue={reserva ? String(reserva).replace(".", ",") : ""}
             placeholder="0"
             aria-label="Reserva mínima em euros"
-            className={cn("pr-8 font-mono", PRIVADO)}
+            className={cn("pr-8", PRIVADO)}
           />
           <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm">€</span>
         </div>

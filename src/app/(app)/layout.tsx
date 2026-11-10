@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     <ProvedorSaldoOculto inicial={biscoitos.get(COOKIE_SALDO_OCULTO)?.value === "1"}>
       <header className="bg-background/90 supports-[backdrop-filter]:bg-background/75 sticky top-0 z-20 border-b pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className={`mx-auto flex h-14 w-full max-w-5xl items-center gap-x-6 ${LADOS}`}>
-          <span className="font-heading text-lg font-bold tracking-tight">Contas Souto</span>
+          <span className="text-lg font-bold tracking-tight">Contas Souto</span>
           <Navegacao className="max-md:hidden" />
           <div className="ml-auto flex items-center gap-1">
             <span className="text-muted-foreground mr-1 text-sm max-md:hidden">{eu.nome.split(" ")[0]}</span>

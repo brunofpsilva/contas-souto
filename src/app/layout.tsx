@@ -1,15 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, IBM_Plex_Mono, Instrument_Sans } from "next/font/google";
+import { Instrument_Sans } from "next/font/google";
+import { cookies } from "next/headers";
+import { COOKIE_TEMA, CORES, lerTema } from "@/lib/tema";
 import "./globals.css";
 
-// Mesma tipografia da versão antiga: títulos, texto e números.
-const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["latin"] });
+// Uma só família para títulos, texto e números (tem algarismos tabulares).
 const sans = Instrument_Sans({ variable: "--font-sans", subsets: ["latin"] });
-const mono = IBM_Plex_Mono({ variable: "--font-mono", subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
   title: { default: "Contas Souto", template: "%s · Contas Souto" },
-  description: "Previsão das despesas da casa no Souto contra o dinheiro nas contas do Wallet.",
+  description: "Despesas da casa e saldo previsto.",
   applicationName: "Contas Souto",
   // No ecrã principal do iPhone abre como app, sem a barra do Safari.
   appleWebApp: { capable: true, title: "Contas Souto", statusBarStyle: "default" },
@@ -17,20 +17,28 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false, email: false, address: false },
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  // Ocupa o ecrã todo (notch, barra do fundo); as margens seguras vêm do CSS.
-  viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f2f4f1" },
-    { media: "(prefers-color-scheme: dark)", color: "#141917" },
-  ],
-};
+/** A barra do browser acompanha o tema: o escolhido nas Definições ou, sem escolha, o do sistema. */
+export async function generateViewport(): Promise<Viewport> {
+  const tema = lerTema((await cookies()).get(COOKIE_TEMA)?.value);
+  return {
+    width: "device-width",
+    initialScale: 1,
+    // Ocupa o ecrã todo (notch, barra do fundo); as margens seguras vêm do CSS.
+    viewportFit: "cover",
+    themeColor: tema
+      ? CORES[tema].fundo
+      : [
+          { media: "(prefers-color-scheme: light)", color: CORES.claro.fundo },
+          { media: "(prefers-color-scheme: dark)", color: CORES.escuro.fundo },
+        ],
+  };
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const tema = lerTema((await cookies()).get(COOKIE_TEMA)?.value);
   return (
-    <html lang="pt-PT" className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}>
+    // data-tema só existe com "Claro" ou "Escuro" escolhido; sem ele, o CSS segue o sistema.
+    <html lang="pt-PT" data-tema={tema ?? undefined} className={`${sans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

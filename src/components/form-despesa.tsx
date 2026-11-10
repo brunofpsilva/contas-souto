@@ -87,7 +87,7 @@ export function FormDespesa({
               defaultValue={v.valor}
               placeholder="0,00"
               required
-              className="pr-8 font-mono"
+              className="pr-8"
               aria-invalid={Boolean(erros.valor)}
               aria-describedby={erros.valor ? "valor-erro" : undefined}
             />

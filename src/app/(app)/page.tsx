@@ -51,7 +51,7 @@ export default async function ResumoPage() {
     <>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="space-y-2">
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Resumo</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Resumo</h1>
           <Estado tom={estado.tom}>
             {estado.valor ? (
               <span>
@@ -134,7 +134,7 @@ export default async function ResumoPage() {
 
       <section aria-labelledby="titulo-categorias" className="grid gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="titulo-categorias" className="font-heading font-bold">
+          <h2 id="titulo-categorias" className="font-bold">
             Por categoria
           </h2>
           <Legenda />
@@ -147,7 +147,7 @@ export default async function ResumoPage() {
               <li key={c.categoria} className="grid gap-1.5">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 text-sm">
                   <span className="font-medium">{c.categoria}</span>
-                  <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                  <span className="text-muted-foreground text-xs tabular-nums">
                     {c.pago > 0 && <>pago {euros(c.pago)}</>}
                     {c.pago > 0 && c.porPagar > 0 && " · "}
                     {c.porPagar > 0 && <>por pagar {euros(c.porPagar)}</>}
@@ -170,7 +170,7 @@ export default async function ResumoPage() {
 
       <section aria-labelledby="titulo-divisoes" className="grid gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="titulo-divisoes" className="font-heading font-bold">
+          <h2 id="titulo-divisoes" className="font-bold">
             Por divisão
           </h2>
           <Link href="/orcamento" className="text-primary -my-2 py-2 text-sm underline-offset-2 hover:underline">
@@ -189,7 +189,7 @@ export default async function ResumoPage() {
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b pb-3 text-sm">
               <span>
                 <span className="font-medium">Orçamento geral</span>{" "}
-                <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                <span className="text-muted-foreground text-xs tabular-nums">
                   {euros(orcamento.geral.total)} de {euros(orcamento.geral.orcamento)}
                 </span>
               </span>
@@ -200,10 +200,10 @@ export default async function ResumoPage() {
                 <li key={l.id ?? "nenhuma"} className="grid gap-1.5">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-4 text-sm">
                     <span className="font-medium">{l.nome}</span>
-                    <span className="font-mono text-xs tabular-nums">
+                    <span className="text-xs tabular-nums">
                       {euros(l.total)}
                       {l.orcamento != null && <span className="text-muted-foreground"> / {euros(l.orcamento)}</span>}
-                      <TextoRestante l={l} className="ml-2 font-sans" />
+                      <TextoRestante l={l} className="ml-2" />
                     </span>
                   </div>
                   <BarraOrcamento l={l} />
@@ -217,7 +217,7 @@ export default async function ResumoPage() {
 
       <section aria-labelledby="titulo-por-pagar" className="grid gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="titulo-por-pagar" className="font-heading font-bold">
+          <h2 id="titulo-por-pagar" className="font-bold">
             Despesas por pagar
           </h2>
           <Link href="/despesas" className="text-primary -my-2 py-2 text-sm underline-offset-2 hover:underline">

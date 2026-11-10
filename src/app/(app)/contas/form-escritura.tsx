@@ -45,7 +45,7 @@ export function FormMarco({
   return (
     <form action={acao} className="grid content-start gap-4" aria-labelledby={`titulo-${tipo}`}>
       <div className="grid gap-1">
-        <h2 id={`titulo-${tipo}`} className="font-heading text-lg font-bold">
+        <h2 id={`titulo-${tipo}`} className="text-lg font-bold">
           {MARCOS[tipo].titulo}
         </h2>
         <p className="text-muted-foreground text-sm">

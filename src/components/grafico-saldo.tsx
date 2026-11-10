@@ -49,17 +49,17 @@ export function GraficoSaldo({
       <AreaChart responsive data={pontos} margin={{ top: 12, right: 12, bottom: 0, left: 0 }} style={{ width: "100%", height: "100%" }}>
         <defs>
           <linearGradient id="saldo-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="var(--grafico-1)" stopOpacity={0.12} />
-            <stop offset="1" stopColor="var(--grafico-1)" stopOpacity={0.12} />
+            <stop offset="0" stopColor="var(--primaria)" stopOpacity={0.12} />
+            <stop offset="1" stopColor="var(--primaria)" stopOpacity={0.12} />
           </linearGradient>
         </defs>
-        <CartesianGrid vertical={false} stroke="var(--border)" strokeWidth={1} />
+        <CartesianGrid vertical={false} stroke="var(--borda)" strokeWidth={1} />
         <XAxis
           dataKey="mes"
           tickFormatter={mesCurto}
           tickLine={false}
-          axisLine={{ stroke: "var(--border)" }}
-          tick={{ fill: "var(--muted-foreground)", fontSize: 11, fontFamily: "var(--font-mono)" }}
+          axisLine={{ stroke: "var(--borda)" }}
+          tick={{ fill: "var(--texto-suave)", fontSize: 11, fontFamily: "var(--font-sans)" }}
           interval="preserveStartEnd"
           minTickGap={12}
         />
@@ -70,26 +70,26 @@ export function GraficoSaldo({
           tickFormatter={(v: number) => compacto.format(v)}
           tickLine={false}
           axisLine={false}
-          tick={{ fill: "var(--muted-foreground)", fontSize: 11, fontFamily: "var(--font-mono)" }}
+          tick={{ fill: "var(--texto-suave)", fontSize: 11, fontFamily: "var(--font-sans)" }}
           tickCount={5}
         />
-        {min < 0 && <ReferenceLine y={0} stroke="var(--destructive)" strokeWidth={1} />}
+        {min < 0 && <ReferenceLine y={0} stroke="var(--negativo)" strokeWidth={1} />}
         {reserva > 0 && (
           <ReferenceLine
             y={reserva}
-            stroke="var(--muted-foreground)"
+            stroke="var(--texto-suave)"
             strokeDasharray="4 4"
             strokeWidth={1}
-            label={{ value: "Reserva", position: "insideTopRight", fill: "var(--muted-foreground)", fontSize: 11 }}
+            label={{ value: "Reserva", position: "insideTopRight", fill: "var(--texto-suave)", fontSize: 11 }}
           />
         )}
         {mesEscritura && pontos.some((p) => p.mes === mesEscritura) && (
           <ReferenceLine
             x={mesEscritura}
-            stroke="var(--foreground)"
+            stroke="var(--texto)"
             strokeDasharray="3 3"
             strokeWidth={1}
-            label={{ value: "Escritura", position: "insideTopLeft", fill: "var(--foreground)", fontSize: 11 }}
+            label={{ value: "Escritura", position: "insideTopLeft", fill: "var(--texto)", fontSize: 11 }}
           />
         )}
         {comBanda && (
@@ -97,23 +97,23 @@ export function GraficoSaldo({
             type="linear"
             dataKey="banda"
             stroke="none"
-            fill="var(--grafico-1)"
+            fill="var(--primaria)"
             fillOpacity={0.14}
             isAnimationActive={false}
             activeDot={false}
           />
         )}
-        <Tooltip content={Dica} cursor={{ stroke: "var(--muted-foreground)", strokeWidth: 1 }} isAnimationActive={false} />
+        <Tooltip content={Dica} cursor={{ stroke: "var(--texto-suave)", strokeWidth: 1 }} isAnimationActive={false} />
         <Area
           type="linear"
           dataKey="saldo"
-          stroke="var(--grafico-1)"
+          stroke="var(--primaria)"
           strokeWidth={2}
           strokeLinejoin="round"
           strokeLinecap="round"
           fill={comBanda ? "none" : "url(#saldo-area)"}
           dot={false}
-          activeDot={{ r: 5, fill: "var(--grafico-1)", stroke: "var(--card)", strokeWidth: 2 }}
+          activeDot={{ r: 5, fill: "var(--primaria)", stroke: "var(--superficie)", strokeWidth: 2 }}
           isAnimationActive={false}
           baseValue={min}
         />
@@ -130,31 +130,31 @@ function Dica({ active, payload }: TooltipContentProps) {
       <p className="font-medium first-letter:uppercase">{mesPorExtenso(p.mes)}</p>
       <p className="flex justify-between gap-6">
         <span className="text-muted-foreground">Saldo previsto</span>
-        <span className={cn("font-mono", p.saldo < 0 && "text-destructive", PRIVADO)}>{euros(p.saldo)}</span>
+        <span className={cn("tabular-nums", p.saldo < 0 && "text-destructive", PRIVADO)}>{euros(p.saldo)}</span>
       </p>
       <p className="flex justify-between gap-6">
         <span className="text-muted-foreground">Saídas no mês</span>
-        <span className="font-mono">{euros(p.saidas)}</span>
+        <span className="tabular-nums">{euros(p.saidas)}</span>
       </p>
       {p.atrasadas > 0 && (
         <p className="flex justify-between gap-6">
           <span className="text-muted-foreground">das quais atrasadas</span>
-          <span className="font-mono">{euros(p.atrasadas)}</span>
+          <span className="tabular-nums">{euros(p.atrasadas)}</span>
         </p>
       )}
       {p.banda && (
         <>
           <p className="flex justify-between gap-6">
             <span className="text-muted-foreground">Entradas previstas</span>
-            <span className={cn("font-mono", PRIVADO)}>{euros(p.entradasPrevistas)}</span>
+            <span className={cn("tabular-nums", PRIVADO)}>{euros(p.entradasPrevistas)}</span>
           </p>
           <p className="flex justify-between gap-6">
             <span className="text-muted-foreground">Gastos do dia a dia</span>
-            <span className="font-mono">{euros(p.saidasPrevistas)}</span>
+            <span className="tabular-nums">{euros(p.saidasPrevistas)}</span>
           </p>
           <p className="flex justify-between gap-6">
             <span className="text-muted-foreground">Intervalo</span>
-            <span className={cn("font-mono", PRIVADO)}>
+            <span className={cn("tabular-nums", PRIVADO)}>
               {euros(p.banda[0], { inteiro: true })} a {euros(p.banda[1], { inteiro: true })}
             </span>
           </p>

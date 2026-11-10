@@ -31,7 +31,7 @@ export default async function ContasPage() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Contas</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Contas</h1>
           <p className="text-muted-foreground text-sm">
             Saldos do Wallet. As contas de investimento e as arquivadas não aparecem.
           </p>

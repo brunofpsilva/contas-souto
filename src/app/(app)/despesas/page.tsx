@@ -42,9 +42,9 @@ export default async function DespesasPage({ searchParams }: PageProps<"/despesa
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Despesas</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Despesas</h1>
           <p className="text-muted-foreground text-sm">
-            {lista.length} despesa{lista.length === 1 ? "" : "s"} · <span className="font-mono tabular-nums">{euros(total)}</span>
+            {lista.length} despesa{lista.length === 1 ? "" : "s"} · <span className="tabular-nums">{euros(total)}</span>
           </p>
         </div>
         <Button asChild>
