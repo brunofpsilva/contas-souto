@@ -34,18 +34,7 @@ export function Barra({
 }
 
 /** Legenda da barra. Com valores, mostra-os ao lado de cada nome. */
-export function Legenda({
-  pago,
-  porPagar,
-  disponivel = false,
-  className,
-}: {
-  pago?: number;
-  porPagar?: number;
-  /** Mostra também "Disponível" (o fundo da barra, quando há limite). */
-  disponivel?: boolean;
-  className?: string;
-}) {
+export function Legenda({ pago, porPagar, className }: { pago?: number; porPagar?: number; className?: string }) {
   return (
     <p className={cn("text-texto-suave flex flex-wrap gap-x-4 gap-y-1 text-xs", className)}>
       <Item cor="bg-grafico-pago">
@@ -54,7 +43,6 @@ export function Legenda({
       <Item cor="bg-grafico-por-pagar">
         Por pagar{porPagar != null && <Valor v={porPagar} inteiro className="text-texto" />}
       </Item>
-      {disponivel && <Item cor="bg-superficie-suave border">Disponível</Item>}
     </p>
   );
 }

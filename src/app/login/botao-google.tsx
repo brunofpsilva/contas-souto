@@ -9,7 +9,7 @@ export function BotaoGoogle() {
   return (
     <Button
       size="lg"
-      className="h-11 w-full"
+      className="w-full"
       disabled={aEntrar}
       onClick={() => {
         setAEntrar(true);

@@ -7,9 +7,9 @@ import { anoCorrente, MESES_CURTOS, type Mes } from "./meses";
 export type Marco = "escritura" | "obra";
 
 /** Como cada marco se escreve: sozinho ("Escritura") e dentro de uma frase. */
-export const MARCOS: Record<Marco, { titulo: string; em: string; depois: string; de: string; ate: string }> = {
-  escritura: { titulo: "Escritura", em: "na escritura", depois: "depois da escritura", de: "da escritura", ate: "até à escritura" },
-  obra: { titulo: "Fim da obra", em: "no fim da obra", depois: "depois da obra", de: "do fim da obra", ate: "até ao fim da obra" },
+export const MARCOS: Record<Marco, { titulo: string; em: string; depois: string; de: string }> = {
+  escritura: { titulo: "Escritura", em: "na escritura", depois: "depois da escritura", de: "da escritura" },
+  obra: { titulo: "Fim da obra", em: "no fim da obra", depois: "depois da obra", de: "do fim da obra" },
 };
 
 /** Datas guardadas nas definições (AAAA-MM-DD ou null). */

@@ -20,8 +20,6 @@ const buttonVariants = cva(
         default: "h-11 px-4",
         lg: "h-12 px-5 text-base",
         icon: "size-11",
-        // Só para os ecrãs antigos; sai quando todos estiverem refeitos.
-        sm: "h-11 px-3",
       },
     },
     defaultVariants: {

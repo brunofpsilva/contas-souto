@@ -8,12 +8,13 @@ It reads account balances and transactions from [Wallet by BudgetBakers](https:/
 
 ## Features
 
-- **Summary**: money available today, what is still to pay, projected balance with optimistic/pessimistic band and a minimum-reserve warning.
-- **Expenses**: planned and paid house expenses, each tied to a month, to the deed date or to the end of construction, and optionally to a room.
-- **Budget**: rooms with a maximum budget, compared against what was paid and is still to pay (for comparison only, not part of the forecast).
-- **Accounts**: Wallet balances, which accounts count, reserve, key dates and a manual sync button.
-- **Day-to-day forecast**: income and spending estimated from the last 12 months of real Wallet transactions.
-- Google login restricted to an email allow-list; installable as a PWA.
+- **Home** (Início): one answer at the top: is there enough money, and how much is left after the last key date. Below it, today's balance, what is still to pay and the next payments.
+- **Expenses** (Despesas): house expenses, to pay or paid, each tied to a month, to the deed date or to the end of construction, and optionally to a room.
+- **Forecast** (Previsão): projected balance month by month, with a chart, the key dates, a minimum-reserve warning and how each figure is estimated. Monthly spending can be adjusted by hand.
+- **Budget** (Orçamento): rooms with a spending limit, compared against what was paid and is still to pay (for comparison only, not part of the forecast), plus totals by category.
+- **Settings** (Definições): key dates, minimum reserve, which Wallet accounts count, a manual balance update, theme (system, light or dark) and sign out.
+- Income and monthly spending are estimated from the last 12 months of real Wallet transactions.
+- Google login restricted to an email allow-list; installable as a PWA, designed for phones first.
 
 ## Stack
 
@@ -74,15 +75,20 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 ```
 src/
-  app/          pages (summary, expenses, budget, accounts), login, API routes
+  app/          pages (home, expenses, forecast, budget, settings), login, API routes
   actions/      server actions
   components/   UI (ui/ = shadcn)
   db/           Drizzle schema and connection
-  lib/          forecast, key dates, salary cycles, Wallet client, validation
+  lib/          forecast, key dates, salary cycles, Wallet client, validation, formats and labels
   proxy.ts      redirects to /login without an authorised session
+docs/           UX/UI redesign notes (glossary, writing guide, design tokens)
 drizzle/        SQL migrations
 scripts/        build, migrate and cron helpers
 test/           Vitest tests
 ```
 
-The forecast logic lives in `src/lib/previsao.ts` and `src/lib/tendencia.ts`; the Wallet-specific rules are in `src/lib/tendencia-regras.ts`.
+The forecast logic lives in `src/lib/previsao.ts` and `src/lib/tendencia.ts`; the Wallet-specific rules are in `src/lib/tendencia-regras.ts`. What each screen shows from those results is in `src/lib/inicio.ts` and `src/lib/vista-previsao.ts`.
+
+## Design
+
+Colours are semantic tokens defined once in `src/app/globals.css`, with a light and a dark value each (`fundo`, `superficie`, `texto`, `primaria`, `positivo`, `aviso`, `negativo`…). `test/tema.test.ts` checks that every text/background pair meets WCAG AA in both themes. The glossary (one term per concept), the writing guide and the tokens are documented in `docs/redesenho-ux.md`.

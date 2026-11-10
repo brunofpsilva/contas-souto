@@ -41,10 +41,10 @@ export function mesPorExtenso(mes: string): string {
   return `${LONGOS[m - 1]} de ${a}`;
 }
 
-/** "dez 26" (só no eixo do gráfico) */
-export function mesCurto(mes: string): string {
+/** No eixo do gráfico: só o mês ("dez"), com o ano na viragem ("jan 27"). */
+export function mesNoEixo(mes: string): string {
   const [a, m] = mes.split("-").map(Number);
-  return `${MESES_CURTOS[m - 1]} ${String(a).slice(-2)}`;
+  return m === 1 ? `${MESES_CURTOS[0]} ${String(a).slice(-2)}` : MESES_CURTOS[m - 1];
 }
 
 /** Ano corrente, na hora de Lisboa. */

@@ -1,35 +1,41 @@
+import { CircleX } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Alert } from "@/components/ui/alert";
 import { utilizadorAtual } from "@/lib/auth";
 import { BotaoGoogle } from "./botao-google";
 
 export const metadata: Metadata = { title: "Entrar" };
 
+// O que aconteceu, sem nomes técnicos. O botão por baixo já serve para tentar de novo.
+const SEM_ACESSO = "Este email não tem acesso.";
+const COM_GOOGLE = "Não foi possível entrar com o Google.";
+const GERAL = "Não foi possível entrar.";
 const ERROS: Record<string, string> = {
-  AccessDenied: "Este email não tem acesso à Contas Souto. Entra com um dos emails autorizados.",
-  OAuthSignin: "Não foi possível começar o login com o Google. Tenta de novo.",
-  OAuthCallback: "O Google não confirmou o login. Tenta de novo.",
-  Callback: "Houve um problema a guardar o login. Tenta de novo.",
-  Configuration: "O login não está bem configurado no servidor.",
+  AccessDenied: SEM_ACESSO,
+  OAuthSignin: COM_GOOGLE,
+  OAuthCallback: COM_GOOGLE,
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   if (await utilizadorAtual()) redirect("/");
   const { error } = await searchParams;
   const codigo = Array.isArray(error) ? error[0] : error;
-  const mensagem = codigo ? (ERROS[codigo] ?? "Não foi possível entrar. Tenta de novo.") : null;
+  const mensagem = codigo ? (ERROS[codigo] ?? GERAL) : null;
+  // O detalhe (por exemplo "Configuration") fica no log do servidor.
+  if (codigo && !ERROS[codigo]) console.error(`[login] ${codigo}`);
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8 px-4 pt-[max(4rem,env(safe-area-inset-top))] pb-[max(4rem,env(safe-area-inset-bottom))]">
-      <div className="space-y-2">
-        <p className="text-muted-foreground text-xs font-semibold tracking-widest uppercase">Casa no Souto</p>
-        <h1 className="text-4xl font-bold tracking-tight">Contas Souto</h1>
-        <p className="text-muted-foreground">Previsão das despesas da casa contra o dinheiro nas contas do Wallet.</p>
+    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-4 pt-[max(4rem,env(safe-area-inset-top))] pb-[max(4rem,env(safe-area-inset-bottom))]">
+      <div className="grid gap-1">
+        <h1 className="text-2xl font-semibold">Contas Souto</h1>
+        <p className="text-texto-suave">Despesas da casa e saldo previsto.</p>
       </div>
       {mensagem && (
-        <p role="alert" className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm">
-          {mensagem}
-        </p>
+        <Alert variant="negativo" role="alert">
+          <CircleX aria-hidden />
+          <span>{mensagem}</span>
+        </Alert>
       )}
       <BotaoGoogle />
     </main>

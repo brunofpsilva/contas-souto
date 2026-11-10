@@ -3,7 +3,7 @@
 import { Area, AreaChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis, type TooltipContentProps } from "recharts";
 import { Valor } from "@/components/valor";
 import { maiuscula } from "@/lib/formato";
-import { MESES_CURTOS, mesPorExtenso } from "@/lib/meses";
+import { mesNoEixo, mesPorExtenso } from "@/lib/meses";
 
 export interface PontoSaldo {
   /** "hoje" ou o mês (AAAA-MM). */
@@ -18,12 +18,7 @@ export interface PontoSaldo {
 const compacto = new Intl.NumberFormat("pt-PT", { notation: "compact", maximumFractionDigits: 1 });
 const ETIQUETA = { fill: "var(--texto-suave)", fontSize: 12, fontFamily: "var(--font-sans)" };
 
-/** Eixo do tempo: só o mês ("dez"), com o ano na viragem ("jan 27"). */
-function rotuloEixo(chave: string): string {
-  if (chave === "hoje") return "hoje";
-  const [ano, mes] = chave.split("-").map(Number);
-  return mes === 1 ? `${MESES_CURTOS[0]} ${String(ano).slice(-2)}` : MESES_CURTOS[mes - 1];
-}
+const rotuloEixo = (chave: string) => (chave === "hoje" ? "hoje" : mesNoEixo(chave));
 
 /**
  * Saldo previsto de hoje até ao fim da previsão: uma só série, com a reserva mínima a

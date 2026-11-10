@@ -16,6 +16,7 @@ A app tem de responder em 2 segundos a uma pergunta: **chega o dinheiro até à 
 8. [Design tokens](#8-design-tokens)
 9. [Plano de implementação](#9-plano-de-implementação)
 10. [Perguntas](#10-perguntas)
+11. [O que ficou diferente na implementação](#11-o-que-ficou-diferente-na-implementação)
 
 ---
 
@@ -760,9 +761,9 @@ Um termo por conceito, igual em toda a app. A coluna da direita lista o que deix
 **Datas.** Dois formatos:
 
 - Curto, para dias: `12 dez`. Leva o ano quando não é o ano corrente: `15 jan 2027`.
-- Longo, para meses: `dezembro de 2026`.
+- Longo, para meses: `dezembro de 2026`. Nos títulos das listas, o ano só aparece quando não é o corrente: `dezembro`, `janeiro de 2027`.
 
-Há duas variantes do curto: com hora, só em "Atualizado 10 nov, 09:14", e só o mês no eixo do gráfico (`dez`, `jan 27`).
+Há duas variantes do curto: com hora, só em "Atualizado 10 nov, 09:14", e só o mês no eixo do gráfico (`dez`, e `jan 27` na viragem do ano).
 
 **Nomes entre aspas.** Aspas portuguesas: «Sofá».
 
@@ -863,8 +864,8 @@ Todos os textos visíveis. 🧪 marca os que estão nos testes. "(igual)" quer d
 | | Entradas previstas | Entradas |
 | | Gastos do dia a dia | Gastos mensais |
 | | Intervalo | (sai) |
-| `tendencia.ts`, avisos | Ainda não há movimentos do Wallet: sincroniza para ver a previsão do dia a dia. | Sem movimentos do Wallet. A previsão não inclui entradas nem gastos mensais. |
-| | Só há movimentos em 8 dos últimos 12 meses: a previsão é menos fiável. | Só 8 de 12 meses com movimentos. Previsão menos fiável. |
+| `tendencia.ts`, avisos 🧪 | Ainda não há movimentos do Wallet: sincroniza para ver a previsão do dia a dia. | Sem movimentos do Wallet. A previsão não inclui entradas nem gastos mensais. |
+| 🧪 | Só há movimentos em 8 dos últimos 12 meses: a previsão é menos fiável. | Só 8 de 12 meses com movimentos. Previsão menos fiável. |
 | | 7 % dos movimentos não têm categoria no Wallet. | 7 % dos movimentos sem categoria no Wallet. |
 | | Não há salários nos últimos meses: confirma a categoria Salários no Wallet. | Sem salários nos últimos meses. A categoria «Salários» do Wallet pode estar errada. |
 | `tendencia.ts`, regras 🧪 | Fixo: Ana 1500,50 € + Rui 1200 €. | Fixo: Ana 1 500,50 € + Rui 1 200 € |
@@ -942,7 +943,7 @@ Todos os textos visíveis. 🧪 marca os que estão nos testes. "(igual)" quer d
 | `barra-orcamento.tsx` | faltam 600,00 € | Disponível 600 € |
 | | passou 300,00 € | Acima do limite 300 € |
 | | sem orçamento | sem limite |
-| | Pago · Por pagar · Por gastar (legenda) | Pago · Por pagar · Disponível |
+| | Pago · Por pagar · Por gastar (legenda) | Pago · Por pagar (o que está disponível diz-se por baixo da barra) |
 | `form-divisoes.tsx` | Divisões | (igual) |
 | | Não aplicável 🧪 | Sem divisão |
 | | Despesas sem divisão. Não tem orçamento e não conta para o orçamento geral. | fora do orçamento |
@@ -1088,7 +1089,7 @@ O teste do `premium` procura "Premium" na mensagem técnica, que não muda.
 | `dataCurta()` 🧪 | 1 dez 2026 (sempre com ano) | 1 dez no ano corrente; 1 dez 2027 nos outros |
 | `dataHora()` | 10/11, 01:14 | 10 nov, 01:14 |
 | `mesPorExtenso()` 🧪 | março de 2027 | (igual) |
-| `mesCurto()` 🧪 | dez 26 | (igual, mas só no eixo do gráfico) |
+| `mesCurto()` 🧪 | dez 26 | `mesNoEixo()`: dez, e jan 27 na viragem do ano (só no eixo do gráfico) |
 
 ---
 
@@ -1292,3 +1293,26 @@ Cada uma tem a minha recomendação. Se responderes só "ok", sigo com as recome
 13. **"Ligações (luz, água, gás, net)" mostra-se como "Ligações".**
 14. **A banda otimista/pessimista sai do README e do gráfico.** O cálculo fica como está.
 15. **O "mínimo" sai do estado do Início.** Fica visível no gráfico da Previsão.
+
+---
+
+## 11. O que ficou diferente na implementação
+
+O que foi construído segue este documento. As diferenças são estas:
+
+| Onde | Proposta | Como ficou | Porquê |
+|---|---|---|---|
+| Definições | Seta para voltar, sem barra de baixo | Sem seta, com a barra de baixo | Chega-se lá de qualquer separador; com a barra, sai-se para qualquer um. |
+| Títulos de mês nas listas | "Novembro de 2026" | "Novembro"; o ano só nos outros anos | A mesma regra das datas curtas. Menos texto e sem ambiguidade. |
+| Orçamento, cartão do topo | Legenda com "Disponível" | Legenda só com "Pago" e "Por pagar" | "Disponível 640 €" já está escrito por baixo da barra. |
+| Orçamento, "Sem divisão" | Linha dentro da lista | Cartão à parte, só quando há despesas sem divisão | Fica claro que está fora do orçamento. |
+| Início sem despesas | Botão "Adicionar despesa" cheio | Botão com contorno | O "+" da barra já é a ação principal do ecrã. |
+| Erro "há instantes" | "Saldos atualizados há instantes." | "Atualização pedida há instantes. Disponível dentro de meio minuto." | A frase antiga também aparecia depois de uma tentativa falhada. |
+| Eixo do gráfico | `mesCurto()` ("dez 26") | `mesNoEixo()` ("dez", "jan 27") | Só o mês; o ano aparece na viragem. |
+
+Dois problemas antigos que apareceram pelo caminho e ficaram corrigidos:
+
+- O eixo do gráfico não se escondia com os saldos escondidos. O seletor de CSS não apanhava nada, e nunca se tinha notado porque o gráfico não aparecia.
+- Os testes também verificavam dois avisos da previsão ("Só há movimentos em…" e "Ainda não há movimentos…"), que não estavam marcados na secção 7.
+
+Verificação: `npm run typecheck`, `npm run lint` e `npm test` passam em todos os passos. Os ecrãs foram vistos a 375 e a 1280 px, em claro e escuro, com `next dev` noutra porta e uma base de dados local com dados fictícios. A base de dados de produção nunca foi usada.

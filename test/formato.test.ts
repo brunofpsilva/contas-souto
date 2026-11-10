@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { dataHora, euros, maiuscula, plural, textoEstado } from "@/lib/formato";
-import { mesCurto, mesLongo, mesPorExtenso, somarMeses, eMesValido } from "@/lib/meses";
+import { mesLongo, mesNoEixo, mesPorExtenso, somarMeses, eMesValido } from "@/lib/meses";
 import { calcularPrevisao } from "@/lib/previsao";
 
 // Os separadores do Intl são espaços não separáveis; normalizamos para comparar.
@@ -37,7 +37,8 @@ describe("meses", () => {
   });
   test("nomes em português", () => {
     expect(mesPorExtenso("2027-03")).toBe("março de 2027");
-    expect(mesCurto("2026-12")).toBe("dez 26");
+    expect(mesNoEixo("2026-12")).toBe("dez");
+    expect(mesNoEixo("2027-01")).toBe("jan 27");
   });
   test("o mês por extenso só leva o ano quando não é o corrente", () => {
     expect(mesLongo("2026-12", 2026)).toBe("dezembro");

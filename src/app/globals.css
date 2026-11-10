@@ -49,13 +49,6 @@
   --color-input: var(--borda-forte);
   --color-ring: var(--primaria);
 
-  /* Nomes antigos, só até todos os ecrãs passarem para os novos (saem no fim do redesenho). */
-  --color-ok: var(--positivo);
-  --color-ok-suave: var(--positivo-suave);
-  --color-mau-suave: var(--negativo-suave);
-  --color-grafico-1: var(--grafico-pago);
-  --color-grafico-2: var(--grafico-por-pagar);
-
   /* Uma família para tudo; os números alinham com tabular-nums. */
   --font-sans: var(--font-sans);
   --font-heading: var(--font-sans);
