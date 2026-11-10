@@ -16,6 +16,7 @@
 // - Os cenários otimista/pessimista continuam calculados mas a página já não os mostra.
 
 import { cicloDe, diaReal, diasEntre, fimCiclo, inicioCiclo, somarDias } from "./ciclo";
+import { euros } from "./formato";
 import { diaDe, somarMeses, type Mes } from "./meses";
 import type { FluxoMes, Intervalo } from "./previsao";
 import { REGRAS, type RegrasTendencia } from "./tendencia-regras";
@@ -153,7 +154,7 @@ export function classificar(m: MovimentoTendencia, r: RegrasTendencia = REGRAS):
 const NOMES: Record<IdComponente, { nome: string; sentido: "entrada" | "saida" }> = {
   salarios: { nome: "Salários", sentido: "entrada" },
   rendimentos: { nome: "Outros rendimentos", sentido: "entrada" },
-  gastos: { nome: "Gastos do dia a dia", sentido: "saida" },
+  gastos: { nome: "Dia a dia", sentido: "saida" },
   renda: { nome: "Renda", sentido: "saida" },
 };
 
@@ -163,29 +164,32 @@ function nomeAnual(tipo: TipoAnual, nota: string): string {
   return /natal/i.test(nota) ? "Subsídio de Natal" : "Subsídio de férias";
 }
 
+/** Como se explica a mediana no ecrã, sem a palavra. */
+const habitual = (r: RegrasTendencia) => `Valor habitual dos últimos ${r.mesesJanela} meses`;
+
 function intervaloDe(id: IdComponente, valores: number[], r: RegrasTendencia): { valor: Intervalo; regra: string } {
   if (id === "salarios" && r.salariosFixos.length) {
     const total = arred(r.salariosFixos.reduce((s, x) => s + x.valor, 0));
     return {
       valor: { base: total, otimista: total, pessimista: total },
-      regra: `Fixo: ${r.salariosFixos.map((x) => `${x.nome} ${x.valor.toLocaleString("pt-PT", { minimumFractionDigits: x.valor % 1 ? 2 : 0 })} €`).join(" + ")}.`,
+      regra: `Fixo: ${r.salariosFixos.map((x) => `${x.nome} ${euros(x.valor, { inteiro: x.valor % 1 === 0 })}`).join(" + ")}`,
     };
   }
   if (id === "salarios") {
     return {
       valor: { base: segundoMaisBaixo(valores), otimista: mediana(valores), pessimista: arred(Math.min(...valores, Infinity) || 0) },
-      regra: "2.º mês mais baixo (um mês normal).",
+      regra: `Segundo mês mais baixo dos últimos ${r.mesesJanela}`,
     };
   }
   if (id === "rendimentos") {
     return {
       valor: { base: mediana(valores), otimista: segundoMaisAlto(valores), pessimista: segundoMaisBaixo(valores) },
-      regra: "Mediana dos ciclos.",
+      regra: habitual(r),
     };
   }
   return {
     valor: { base: mediana(valores), otimista: segundoMaisBaixo(valores), pessimista: segundoMaisAlto(valores) },
-    regra: "Mediana dos ciclos.",
+    regra: habitual(r),
   };
 }
 
@@ -334,13 +338,13 @@ export function calcularTendencia({
   const cr = componentes.find((c) => c.id === "renda");
 
   const avisos: string[] = [];
-  if (!movimentos.length) avisos.push("Ainda não há movimentos do Wallet: sincroniza para ver a previsão do dia a dia.");
+  if (!movimentos.length) avisos.push("Sem movimentos do Wallet. A previsão não inclui entradas nem gastos mensais.");
   else if (mesesComDados.size < regras.mesesJanela)
-    avisos.push(`Só há movimentos em ${mesesComDados.size} dos últimos ${regras.mesesJanela} meses: a previsão é menos fiável.`);
+    avisos.push(`Só ${mesesComDados.size} de ${regras.mesesJanela} meses com movimentos. Previsão menos fiável.`);
   if (totalJanela > 0 && semCategoria / totalJanela > 0.05)
-    avisos.push(`${Math.round((semCategoria / totalJanela) * 100)} % dos movimentos não têm categoria no Wallet.`);
+    avisos.push(`${Math.round((semCategoria / totalJanela) * 100)} % dos movimentos sem categoria no Wallet.`);
   if (!componentes.some((c) => c.id === "salarios") && movimentos.length)
-    avisos.push("Não há salários nos últimos meses: confirma a categoria Salários no Wallet.");
+    avisos.push("Sem salários nos últimos meses. A categoria «Salários» do Wallet pode estar errada.");
 
   const zero: Intervalo = { base: 0, otimista: 0, pessimista: 0 };
   const cenarios = ["base", "otimista", "pessimista"] as const;

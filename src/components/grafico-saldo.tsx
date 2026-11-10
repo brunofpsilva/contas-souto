@@ -1,108 +1,110 @@
 "use client";
 
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ReferenceLine,
-  Tooltip,
-  XAxis,
-  YAxis,
-  type TooltipContentProps,
-} from "recharts";
-import { euros } from "@/lib/formato";
-import { mesCurto, mesPorExtenso } from "@/lib/meses";
-import { PRIVADO } from "@/lib/privacidade";
-import { cn } from "@/lib/utils";
+import { Area, AreaChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis, type TooltipContentProps } from "recharts";
+import { Valor } from "@/components/valor";
+import { maiuscula } from "@/lib/formato";
+import { MESES_CURTOS, mesPorExtenso } from "@/lib/meses";
 
 export interface PontoSaldo {
-  mes: string;
+  /** "hoje" ou o mês (AAAA-MM). */
+  chave: string;
+  /** Saldo previsto no fim do mês (ou o saldo de hoje). */
   saldo: number;
-  /** [pessimista, otimista], quando há previsão do dia a dia. */
-  banda: [number, number] | null;
-  saidas: number;
-  atrasadas: number;
-  entradasPrevistas: number;
-  /** Gastos do dia a dia. */
-  saidasPrevistas: number;
+  entradas: number;
+  gastos: number;
+  despesas: number;
 }
 
 const compacto = new Intl.NumberFormat("pt-PT", { notation: "compact", maximumFractionDigits: 1 });
+const ETIQUETA = { fill: "var(--texto-suave)", fontSize: 12, fontFamily: "var(--font-sans)" };
 
-/** Saldo previsto ao fim de cada mês, com a banda pessimista–otimista, a reserva e a escritura. */
+/** Eixo do tempo: só o mês ("dez"), com o ano na viragem ("jan 27"). */
+function rotuloEixo(chave: string): string {
+  if (chave === "hoje") return "hoje";
+  const [ano, mes] = chave.split("-").map(Number);
+  return mes === 1 ? `${MESES_CURTOS[0]} ${String(ano).slice(-2)}` : MESES_CURTOS[mes - 1];
+}
+
+/**
+ * Saldo previsto de hoje até ao fim da previsão: uma só série, com a reserva mínima a
+ * tracejado e uma linha vertical em cada marco (escritura e fim da obra).
+ */
 export function GraficoSaldo({
   pontos,
   reserva,
-  mesEscritura,
+  marcos,
 }: {
   pontos: PontoSaldo[];
   reserva: number;
-  mesEscritura?: string;
+  marcos: { chave: string; titulo: string }[];
 }) {
-  const valores = pontos.flatMap((p) => [p.saldo, ...(p.banda ?? [])]);
-  const min = Math.min(0, reserva, ...valores);
-  const max = Math.max(reserva, ...valores);
-  const comBanda = pontos.some((p) => p.banda);
+  const min = Math.min(0, ...pontos.map((p) => p.saldo));
+  const metade = (pontos.length - 1) / 2;
 
   return (
-    <div className="privado-eixo h-56 w-full touch-pan-y sm:h-64" role="img" aria-label="Gráfico do saldo previsto mês a mês; os valores estão na tabela abaixo.">
-      <AreaChart responsive data={pontos} margin={{ top: 12, right: 12, bottom: 0, left: 0 }} style={{ width: "100%", height: "100%" }}>
-        <defs>
-          <linearGradient id="saldo-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="var(--primaria)" stopOpacity={0.12} />
-            <stop offset="1" stopColor="var(--primaria)" stopOpacity={0.12} />
-          </linearGradient>
-        </defs>
+    <div
+      className="privado-eixo h-52 w-full touch-pan-y sm:h-64"
+      role="img"
+      aria-label='Gráfico do saldo previsto por mês. Os valores estão na lista "Mês a mês".'
+    >
+      <AreaChart responsive data={pontos} margin={{ top: 8 + marcos.length * 16, right: 12, bottom: 0, left: 0 }} style={{ width: "100%", height: "100%" }}>
         <CartesianGrid vertical={false} stroke="var(--borda)" strokeWidth={1} />
         <XAxis
-          dataKey="mes"
-          tickFormatter={mesCurto}
+          dataKey="chave"
+          tickFormatter={rotuloEixo}
           tickLine={false}
           axisLine={{ stroke: "var(--borda)" }}
-          tick={{ fill: "var(--texto-suave)", fontSize: 11, fontFamily: "var(--font-sans)" }}
+          tick={ETIQUETA}
           interval="preserveStartEnd"
-          minTickGap={12}
+          minTickGap={16}
         />
         <YAxis
-          // Largura à medida das etiquetas ("123,5 mil" não cabia em 44px e ficava cortado).
+          // Largura à medida das etiquetas ("123,5 mil" não cabe numa largura fixa).
           width="auto"
-          domain={[min, max]}
+          // Começa em zero (ou abaixo, se o saldo ficar negativo) e acaba num valor redondo.
+          domain={[min < 0 ? "auto" : 0, "auto"]}
           tickFormatter={(v: number) => compacto.format(v)}
           tickLine={false}
           axisLine={false}
-          tick={{ fill: "var(--texto-suave)", fontSize: 11, fontFamily: "var(--font-sans)" }}
-          tickCount={5}
+          tick={ETIQUETA}
+          tickCount={4}
         />
         {min < 0 && <ReferenceLine y={0} stroke="var(--negativo)" strokeWidth={1} />}
         {reserva > 0 && (
           <ReferenceLine
             y={reserva}
+            ifOverflow="extendDomain"
             stroke="var(--texto-suave)"
             strokeDasharray="4 4"
             strokeWidth={1}
-            label={{ value: "Reserva", position: "insideTopRight", fill: "var(--texto-suave)", fontSize: 11 }}
+            // À esquerda, onde o saldo costuma estar mais alto e a linha não passa por cima do nome.
+            label={{ value: "Reserva mínima", position: "insideBottomLeft", ...ETIQUETA }}
           />
         )}
-        {mesEscritura && pontos.some((p) => p.mes === mesEscritura) && (
-          <ReferenceLine
-            x={mesEscritura}
-            stroke="var(--texto)"
-            strokeDasharray="3 3"
-            strokeWidth={1}
-            label={{ value: "Escritura", position: "insideTopLeft", fill: "var(--texto)", fontSize: 11 }}
-          />
-        )}
-        {comBanda && (
-          <Area
-            type="linear"
-            dataKey="banda"
-            stroke="none"
-            fill="var(--primaria)"
-            fillOpacity={0.14}
-            isAnimationActive={false}
-            activeDot={false}
-          />
-        )}
+        {marcos.map((m, i) => {
+          // O nome fica por cima do gráfico, do lado da linha que tem mais espaço.
+          const aEsquerda = pontos.findIndex((p) => p.chave === m.chave) > metade;
+          return (
+            <ReferenceLine
+              key={m.titulo}
+              x={m.chave}
+              stroke="var(--texto-suave)"
+              strokeWidth={1}
+              label={({ viewBox }: { viewBox: { x: number; y: number } }) => (
+                <text
+                  x={viewBox.x + (aEsquerda ? 4 : -4)}
+                  y={viewBox.y - 6 - (marcos.length - 1 - i) * 16}
+                  textAnchor={aEsquerda ? "end" : "start"}
+                  fill="var(--texto)"
+                  fontSize={12}
+                  fontWeight={500}
+                >
+                  {m.titulo}
+                </text>
+              )}
+            />
+          );
+        })}
         <Tooltip content={Dica} cursor={{ stroke: "var(--texto-suave)", strokeWidth: 1 }} isAnimationActive={false} />
         <Area
           type="linear"
@@ -111,7 +113,8 @@ export function GraficoSaldo({
           strokeWidth={2}
           strokeLinejoin="round"
           strokeLinecap="round"
-          fill={comBanda ? "none" : "url(#saldo-area)"}
+          fill="var(--primaria)"
+          fillOpacity={0.1}
           dot={false}
           activeDot={{ r: 5, fill: "var(--primaria)", stroke: "var(--superficie)", strokeWidth: 2 }}
           isAnimationActive={false}
@@ -126,40 +129,35 @@ function Dica({ active, payload }: TooltipContentProps) {
   const p = payload?.[0]?.payload as PontoSaldo | undefined;
   if (!active || !p) return null;
   return (
-    <div className="bg-popover text-popover-foreground grid gap-1 rounded-lg border px-3 py-2 text-xs shadow-md">
-      <p className="font-medium first-letter:uppercase">{mesPorExtenso(p.mes)}</p>
-      <p className="flex justify-between gap-6">
-        <span className="text-muted-foreground">Saldo previsto</span>
-        <span className={cn("tabular-nums", p.saldo < 0 && "text-destructive", PRIVADO)}>{euros(p.saldo)}</span>
-      </p>
-      <p className="flex justify-between gap-6">
-        <span className="text-muted-foreground">Saídas no mês</span>
-        <span className="tabular-nums">{euros(p.saidas)}</span>
-      </p>
-      {p.atrasadas > 0 && (
-        <p className="flex justify-between gap-6">
-          <span className="text-muted-foreground">das quais atrasadas</span>
-          <span className="tabular-nums">{euros(p.atrasadas)}</span>
-        </p>
+    <div className="bg-superficie text-texto shadow-flutuante grid gap-1 rounded-lg border px-3 py-2 text-xs">
+      <p className="font-medium">{p.chave === "hoje" ? "Hoje" : maiuscula(mesPorExtenso(p.chave))}</p>
+      <Parcela rotulo={p.chave === "hoje" ? "Saldo hoje" : "Saldo previsto"}>
+        <Valor v={p.saldo} inteiro privado className={p.saldo < 0 ? "text-negativo font-medium" : "font-medium"} />
+      </Parcela>
+      {p.entradas > 0 && (
+        <Parcela rotulo="Entradas">
+          <Valor v={p.entradas} inteiro sinal privado />
+        </Parcela>
       )}
-      {p.banda && (
-        <>
-          <p className="flex justify-between gap-6">
-            <span className="text-muted-foreground">Entradas previstas</span>
-            <span className={cn("tabular-nums", PRIVADO)}>{euros(p.entradasPrevistas)}</span>
-          </p>
-          <p className="flex justify-between gap-6">
-            <span className="text-muted-foreground">Gastos do dia a dia</span>
-            <span className="tabular-nums">{euros(p.saidasPrevistas)}</span>
-          </p>
-          <p className="flex justify-between gap-6">
-            <span className="text-muted-foreground">Intervalo</span>
-            <span className={cn("tabular-nums", PRIVADO)}>
-              {euros(p.banda[0], { inteiro: true })} a {euros(p.banda[1], { inteiro: true })}
-            </span>
-          </p>
-        </>
+      {p.gastos > 0 && (
+        <Parcela rotulo="Gastos mensais">
+          <Valor v={-p.gastos} inteiro />
+        </Parcela>
+      )}
+      {p.despesas > 0 && (
+        <Parcela rotulo="Despesas">
+          <Valor v={-p.despesas} inteiro />
+        </Parcela>
       )}
     </div>
+  );
+}
+
+function Parcela({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+  return (
+    <p className="flex justify-between gap-6">
+      <span className="text-texto-suave">{rotulo}</span>
+      {children}
+    </p>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { EstadoFormDespesa } from "@/actions/despesas";
+import { BarraAcoes } from "@/components/barra-acoes";
 import { SegmentosEscolha } from "@/components/segmentos";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -143,8 +144,7 @@ export function FormDespesa({
         />
       </Campo>
 
-      {/* Telemóvel: botões fixos em baixo, no lugar da barra de navegação. A partir de md, no fim do formulário. */}
-      <div className="bg-fundo/95 supports-backdrop-filter:bg-fundo/85 fixed inset-x-0 bottom-0 z-20 grid gap-2 border-t pt-3 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] backdrop-blur md:static md:z-auto md:flex md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+      <BarraAcoes>
         <Button type="submit" disabled={aGuardar}>
           {aGuardar ? "A guardar…" : textoBotao}
         </Button>
@@ -153,7 +153,7 @@ export function FormDespesa({
             Adicionar e criar outra
           </Button>
         )}
-      </div>
+      </BarraAcoes>
     </form>
   );
 }

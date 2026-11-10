@@ -10,7 +10,7 @@ const Contexto = createContext<{ oculto: boolean; alternar: () => void } | null>
 // Com os saldos escondidos: desfoca os valores e esconde as marcas do eixo do gráfico.
 const ESTILO_OCULTO = `
 .${PRIVADO} { filter: blur(0.45em); user-select: none; }
-.privado-eixo .recharts-yAxis .recharts-cartesian-axis-tick-value { visibility: hidden; }
+.privado-eixo .recharts-yAxis-tick-labels { visibility: hidden; }
 `;
 
 /** Envolve a app; com os saldos escondidos, desfoca tudo o que tem a classe `privado`. */

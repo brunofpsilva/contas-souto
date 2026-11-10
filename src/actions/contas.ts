@@ -105,10 +105,10 @@ export async function guardarContas(escolha: string[] | null): Promise<EstadoAca
   return resposta(true, ids ? "Guardado." : "Seleção automática: contas com saldo positivo.");
 }
 
-/** Guarda os gastos do dia a dia escritos à mão por ciclo; um campo vazio volta à previsão automática. */
+/** Guarda os gastos mensais ajustados à mão; um campo vazio volta ao valor automático. */
 export async function guardarGastos(_anterior: EstadoAcao, form: FormData): Promise<EstadoAcao> {
   const eu = await exigirUtilizador();
-  // "Voltar ao automático": todos os campos contam como vazios.
+  // "Repor automático": todos os campos contam como vazios.
   const repor = form.get("repor") === "tudo";
   const entradas = [...form.entries()].map(([k, v]): [string, unknown] => [k, repor ? "" : v]);
   const r = validarGastosEditados(entradas);
@@ -127,6 +127,6 @@ export async function guardarGastos(_anterior: EstadoAcao, form: FormData): Prom
 
   revalidatePath("/", "layout");
   const n = r.guardar.length;
-  const mensagem = repor ? "Voltou tudo ao automático." : n ? `Guardado: ${n} ciclo${n === 1 ? "" : "s"} com valor teu.` : "Guardado: tudo automático.";
+  const mensagem = repor ? "Tudo em automático." : n ? `Guardado. ${n === 1 ? "1 mês ajustado" : `${n} meses ajustados`}.` : "Guardado. Tudo em automático.";
   return resposta(true, mensagem);
 }

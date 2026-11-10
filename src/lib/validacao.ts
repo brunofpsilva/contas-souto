@@ -9,7 +9,7 @@ import {
   type Estado,
 } from "./dominio";
 import { mesDaData } from "./escritura";
-import { eMesValido } from "./meses";
+import { eMesValido, mesPorExtenso } from "./meses";
 
 /**
  * Lê um valor em euros escrito à portuguesa ou à inglesa:
@@ -150,14 +150,14 @@ export function validarDivisoes(
 export function validarReserva(entrada: unknown): { ok: true; valor: number } | { ok: false; erro: string } {
   if (entrada == null || (typeof entrada === "string" && !entrada.trim())) return { ok: true, valor: 0 };
   const v = lerValor(entrada);
-  if (v == null || v < 0) return { ok: false, erro: "A reserva tem de ser um número igual ou maior que zero." };
-  if (v >= 1e10) return { ok: false, erro: "A reserva é demasiado grande." };
+  if (v == null || v < 0) return { ok: false, erro: "A reserva mínima tem de ser um número igual ou maior que zero." };
+  if (v >= 1e10) return { ok: false, erro: "A reserva mínima é demasiado grande." };
   return { ok: true, valor: v };
 }
 
 /**
- * Gastos do dia a dia editados por ciclo: campos "gasto:AAAA-MM". Vazio = volta à previsão
- * automática (fica em `apagar`).
+ * Gastos mensais ajustados à mão: campos "gasto:AAAA-MM". Vazio = volta ao valor
+ * automático (fica em `apagar`).
  */
 export function validarGastosEditados(
   entradas: Iterable<[string, unknown]>,
@@ -173,8 +173,8 @@ export function validarGastosEditados(
       continue;
     }
     const v = lerValor(entrada);
-    if (v == null || v < 0) return { ok: false, erro: `O valor de ${mes} tem de ser um número igual ou maior que zero.` };
-    if (v >= 1e9) return { ok: false, erro: `O valor de ${mes} é demasiado grande.` };
+    if (v == null || v < 0) return { ok: false, erro: `O valor de ${mesPorExtenso(mes)} tem de ser um número igual ou maior que zero.` };
+    if (v >= 1e9) return { ok: false, erro: `O valor de ${mesPorExtenso(mes)} é demasiado grande.` };
     guardar.push({ mes, valor: v });
   }
   return { ok: true, guardar, apagar };

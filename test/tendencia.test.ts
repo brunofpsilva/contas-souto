@@ -116,7 +116,8 @@ describe("calcularTendencia", () => {
     const t = calcularTendencia({ regras: { ...REGRAS, salariosFixos: fixos }, movimentos: base, hoje });
     const s = t.componentes.find((c) => c.id === "salarios")!;
     expect(s.valor).toEqual({ base: 2800.5, otimista: 2800.5, pessimista: 2800.5 });
-    expect(s.regra).toBe("Fixo: Ana 1500,50 € + Rui 1200 € + Extra 100 €.");
+    // Os separadores do Intl são espaços não separáveis; normalizamos para comparar.
+    expect(s.regra.replace(/[  ]/g, " ")).toBe("Fixo: Ana 1 500,50 € + Rui 1 200 € + Extra 100 €");
     expect(t.fluxos[1].entradas.base).toBe(2800.5);
   });
 
@@ -205,12 +206,12 @@ describe("calcularTendencia", () => {
     });
     expect(t.componentes.map((c) => c.id)).toEqual(["salarios"]);
     expect(t.componentes[0].valores.map((v) => v.valor)).toEqual([0, 0, 0, 0, 0, 3000]);
-    expect(t.avisos[0]).toMatch(/1 dos últimos 6 meses/);
+    expect(t.avisos[0]).toMatch(/Só 1 de 6 meses com movimentos/);
   });
 
   test("sem movimentos não há fluxos (a previsão fica como antes)", () => {
     const t = calcularTendencia({ regras: R, movimentos: [], hoje });
     expect(t.fluxos).toEqual([]);
-    expect(t.avisos[0]).toMatch(/Ainda não há movimentos/);
+    expect(t.avisos[0]).toMatch(/Sem movimentos do Wallet/);
   });
 });
