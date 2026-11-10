@@ -1,65 +1,169 @@
+import { ChevronRight, Plus, TriangleAlert } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Barra, Legenda } from "@/components/barra";
+import { Seccao } from "@/components/seccao";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Valor } from "@/components/valor";
+import { totaisPorCategoria } from "@/lib/agrupar";
 import { listarDespesas, listarDivisoes } from "@/lib/dados";
-import { euros } from "@/lib/formato";
-import { calcularOrcamento } from "@/lib/orcamento";
-import { cn } from "@/lib/utils";
-import { FormDivisoes, FormNovaDivisao } from "./form-divisoes";
+import { plural } from "@/lib/formato";
+import { calcularOrcamento, type LinhaOrcamento } from "@/lib/orcamento";
+import { rotuloCategoria } from "@/lib/rotulos";
 
 export const metadata: Metadata = { title: "Orçamento" };
+
+const LINHA =
+  "focus-visible:ring-ring/50 hover:bg-superficie-suave/50 grid gap-1.5 px-4 py-3 outline-none focus-visible:ring-3 focus-visible:ring-inset";
 
 export default async function OrcamentoPage() {
   const [divisoes, despesas] = await Promise.all([listarDivisoes(), listarDespesas()]);
   const o = calcularOrcamento(divisoes, despesas);
   const g = o.geral;
-  const passou = g.restante < 0;
+  const temLimite = divisoes.some((d) => d.orcamento != null);
+  const categorias = totaisPorCategoria(despesas);
+  const maiorCategoria = Math.max(1, ...categorias.map((c) => c.total));
 
   return (
-    <>
-      <div className="space-y-1">
-        <p className="text-muted-foreground max-w-2xl text-sm">
-          Quanto podem gastar em cada divisão da casa. Conta o que já está pago e o que está por pagar. O orçamento geral é a
-          soma das divisões; serve para comparar e não entra na previsão do saldo.
-        </p>
-      </div>
+    // No telemóvel, uma coluna pela ordem do código: total, divisões e categorias.
+    // A partir de md, as divisões ficam à direita, ao lado do total e das categorias.
+    <div className="grid gap-6 md:grid-cols-2 md:items-start">
+      {divisoes.length > 0 && (
+        <Card className="grid gap-3 p-4">
+          <div className="grid gap-1">
+            <h2 className="text-texto-suave text-sm">Gasto</h2>
+            <p className="text-2xl font-semibold">
+              <Valor v={g.total} inteiro />
+              {temLimite && (
+                <span className="text-texto-suave text-base font-normal">
+                  {" "}
+                  de <Valor v={g.orcamento} inteiro />
+                </span>
+              )}
+            </p>
+          </div>
+          <Barra pago={g.pago} porPagar={g.porPagar} limite={temLimite ? g.orcamento : null} />
+          <Legenda pago={g.pago} porPagar={g.porPagar} />
+          {temLimite && <Situacao restante={g.restante} />}
+          {g.nExcedidas > 0 && (
+            <p className="text-aviso flex items-center gap-1.5 text-sm font-medium">
+              <TriangleAlert className="size-4 shrink-0" aria-hidden />
+              {plural(g.nExcedidas, "divisão", "divisões")} acima do limite
+            </p>
+          )}
+        </Card>
+      )}
 
-      {/* Telemóvel: orçamento geral em cima, gasto e o que falta lado a lado por baixo. */}
-      <section aria-label="Orçamento geral" className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-3">
-        <Numero
-          className="col-span-2 sm:col-span-1"
-          rotulo="Orçamento geral" valor={euros(g.orcamento)} nota={`${divisoes.filter((d) => d.orcamento != null).length} de ${divisoes.length} divisões com orçamento`} />
-        <Numero rotulo="Gasto" valor={euros(g.total)} nota={`pago ${euros(g.pago)} · por pagar ${euros(g.porPagar)}`} />
-        <Numero
-          rotulo={passou ? "Passou do orçamento" : "Falta gastar"}
-          valor={euros(Math.abs(g.restante))}
-          nota={g.nExcedidas ? `${g.nExcedidas} ${g.nExcedidas === 1 ? "divisão" : "divisões"} acima do orçamento` : "Nenhuma divisão acima do orçamento"}
-          mau={passou}
-        />
-      </section>
+      <Seccao
+        titulo="Divisões"
+        className="md:col-start-2 md:row-span-2 md:row-start-1"
+        acao={
+          divisoes.length > 0 && (
+            <Button asChild variant="outline">
+              <Link href="/orcamento/editar">Editar</Link>
+            </Button>
+          )
+        }
+      >
+        {divisoes.length === 0 ? (
+          <Card className="grid justify-items-start gap-3 p-4">
+            <p>Ainda não há divisões.</p>
+            <Button asChild className="max-sm:w-full">
+              <Link href="/orcamento/editar">
+                <Plus aria-hidden />
+                Adicionar divisão
+              </Link>
+            </Button>
+          </Card>
+        ) : (
+          <Card className="overflow-hidden">
+            <ul className="divide-y">
+              {o.divisoes.map((l) => (
+                <li key={l.id}>
+                  {/* A linha abre as despesas da divisão. */}
+                  <Link href={`/despesas?ver=todas&divisao=${l.id}`} className={LINHA}>
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="font-medium wrap-break-word">{l.nome}</span>
+                      <ChevronRight className="text-texto-suave size-4 shrink-0" aria-hidden />
+                    </span>
+                    <span className="text-texto-suave text-sm">
+                      <Valor v={l.total} inteiro className="text-texto" />{" "}
+                      {l.orcamento != null ? (
+                        <>
+                          de <Valor v={l.orcamento} inteiro />
+                        </>
+                      ) : (
+                        "· sem limite"
+                      )}
+                    </span>
+                    {l.orcamento != null && <Barra pago={l.pago} porPagar={l.porPagar} limite={l.orcamento} />}
+                    <Situacao restante={l.restante} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
 
-      <FormDivisoes linhas={o.divisoes} naoAplicavel={o.naoAplicavel} />
-      <FormNovaDivisao />
-    </>
+        {o.naoAplicavel.nDespesas > 0 && <SemDivisao l={o.naoAplicavel} />}
+      </Seccao>
+
+      {categorias.length > 0 && (
+        <Seccao titulo="Categorias" className="md:col-start-1">
+          <Card className="grid gap-4 p-4">
+            <ul className="grid gap-4">
+              {categorias.map((c) => (
+                <li key={c.categoria} className="grid gap-1.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span>{rotuloCategoria(c.categoria)}</span>
+                    <Valor v={c.total} inteiro className="font-medium" />
+                  </div>
+                  <Barra pago={c.pago} porPagar={c.porPagar} escala={maiorCategoria} />
+                </li>
+              ))}
+            </ul>
+            <Legenda />
+          </Card>
+        </Seccao>
+      )}
+    </div>
   );
 }
 
-function Numero({
-  rotulo,
-  valor,
-  nota,
-  mau = false,
-  className,
-}: {
-  rotulo: string;
-  valor: string;
-  nota?: string;
-  mau?: boolean;
-  className?: string;
-}) {
+/** "Disponível 600 €" ou, quando passa, "Acima do limite 300 €" (aviso, não erro: o orçamento é só comparação). */
+function Situacao({ restante }: { restante: number | null }) {
+  if (restante == null) return null;
+  if (restante < 0) {
+    return (
+      <span className="text-aviso flex items-center gap-1.5 text-sm font-medium">
+        <TriangleAlert className="size-4 shrink-0" aria-hidden />
+        <span>
+          Acima do limite <Valor v={-restante} inteiro />
+        </span>
+      </span>
+    );
+  }
   return (
-    <div className={cn("bg-card grid min-w-0 content-start gap-1 px-3 py-3 sm:px-4", className)}>
-      <p className="text-muted-foreground text-[0.6875rem] leading-tight font-semibold tracking-wider uppercase sm:text-xs">{rotulo}</p>
-      <p className={cn("truncate text-lg font-semibold tabular-nums min-[400px]:text-xl sm:text-2xl", mau && "text-destructive")}>{valor}</p>
-      {nota && <p className="text-muted-foreground text-xs first-letter:uppercase sm:truncate">{nota}</p>}
-    </div>
+    <span className="text-texto-suave text-sm">
+      Disponível <Valor v={restante} inteiro className="text-texto" />
+    </span>
+  );
+}
+
+/** As despesas sem divisão ficam fora do orçamento: aparecem à parte, só quando existem. */
+function SemDivisao({ l }: { l: LinhaOrcamento }) {
+  return (
+    <Card className="overflow-hidden">
+      <Link href="/despesas?ver=todas&divisao=nenhuma" className={LINHA}>
+        <span className="flex items-center justify-between gap-3">
+          <span className="font-medium">{l.nome}</span>
+          <ChevronRight className="text-texto-suave size-4 shrink-0" aria-hidden />
+        </span>
+        <span className="text-texto-suave text-sm">
+          <Valor v={l.total} inteiro className="text-texto" /> · fora do orçamento
+        </span>
+      </Link>
+    </Card>
   );
 }

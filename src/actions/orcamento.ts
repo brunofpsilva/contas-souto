@@ -29,19 +29,19 @@ export async function criarDivisao(_anterior: EstadoAcao, form: FormData): Promi
   if (!nome.ok) return resposta(false, nome.erro);
   const orcamento = validarOrcamento(form.get("orcamento"));
   if (!orcamento.ok) return resposta(false, orcamento.erro);
-  if (await nomeRepetido(nome.nome)) return resposta(false, `Já existe a divisão "${nome.nome}".`);
+  if (await nomeRepetido(nome.nome)) return resposta(false, `Já existe a divisão «${nome.nome}».`);
 
   try {
     await db.insert(v).values({ nome: nome.nome, orcamento: orcamento.valor, criadoPor: eu.email, atualizadoPor: eu.email });
   } catch (e) {
-    if (eNomeDuplicado(e)) return resposta(false, `Já existe a divisão "${nome.nome}".`);
+    if (eNomeDuplicado(e)) return resposta(false, `Já existe a divisão «${nome.nome}».`);
     throw e;
   }
   revalidatePath("/", "layout");
-  return resposta(true, `Divisão "${nome.nome}" adicionada.`);
+  return resposta(true, `Divisão «${nome.nome}» adicionada.`);
 }
 
-/** Guarda os nomes e os orçamentos de todas as divisões de uma vez. */
+/** Guarda os nomes e os limites de todas as divisões de uma vez. */
 export async function guardarDivisoes(_anterior: EstadoAcao, form: FormData): Promise<EstadoAcao> {
   const eu = await exigirUtilizador();
   const r = validarDivisoes(form.entries());
@@ -52,7 +52,7 @@ export async function guardarDivisoes(_anterior: EstadoAcao, form: FormData): Pr
   // Um nome novo não pode chocar com uma divisão que não veio no formulário (criada entretanto).
   for (const d of r.divisoes) {
     const outra = existentes.find((e) => !enviados.has(e.id) && chaveNome(e.nome) === chaveNome(d.nome));
-    if (outra) return resposta(false, `Já existe a divisão "${outra.nome}".`);
+    if (outra) return resposta(false, `Já existe a divisão «${outra.nome}».`);
   }
 
   const ids = new Set(existentes.map((e) => e.id));
@@ -65,12 +65,12 @@ export async function guardarDivisoes(_anterior: EstadoAcao, form: FormData): Pr
     });
   } catch (e) {
     // Trocar nomes entre duas divisões (A↔B) choca a meio; o mais simples é pedir em dois passos.
-    if (eNomeDuplicado(e)) return resposta(false, "Dois nomes chocam entre si. Muda um de cada vez e guarda entre as mudanças.");
+    if (eNomeDuplicado(e)) return resposta(false, "Não é possível trocar dois nomes ao mesmo tempo. Um de cada vez.");
     throw e;
   }
 
   revalidatePath("/", "layout");
-  return resposta(true, "Orçamento guardado.");
+  return resposta(true, "Guardado.");
 }
 
 export type ResultadoApagar = { ok: true; mensagem: string } | { ok: false; mensagem: string };
@@ -78,7 +78,7 @@ export type ResultadoApagar = { ok: true; mensagem: string } | { ok: false; mens
 /** Apaga a divisão; as despesas dela ficam sem divisão (a BD põe divisao_id a null). */
 export async function apagarDivisao(id: number): Promise<ResultadoApagar> {
   await exigirUtilizador();
-  if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) return { ok: false, mensagem: "Pedido inválido." };
+  if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) return { ok: false, mensagem: "Algo correu mal." };
   const d = schema.despesas;
   const r = await db.transaction(async (tx) => {
     const [{ n }] = await tx.select({ n: count() }).from(d).where(eq(d.divisaoId, id));
@@ -86,7 +86,7 @@ export async function apagarDivisao(id: number): Promise<ResultadoApagar> {
     return { n, nome: apagadas[0]?.nome };
   });
   revalidatePath("/", "layout");
-  if (!r.nome) return { ok: false, mensagem: "Esta divisão já tinha sido apagada." };
+  if (!r.nome) return { ok: false, mensagem: "Esta divisão já não existe." };
   const extra = r.n ? ` ${r.n} despesa${r.n === 1 ? " ficou" : "s ficaram"} sem divisão.` : "";
-  return { ok: true, mensagem: `Divisão "${r.nome}" apagada.${extra}` };
+  return { ok: true, mensagem: `Divisão «${r.nome}» apagada.${extra}` };
 }

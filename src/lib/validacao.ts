@@ -96,7 +96,7 @@ export function lerIdDivisao(entrada: unknown): number | null {
 /** Nome de uma divisão: obrigatório, até LIMITE_NOME_DIVISAO, e não pode ser "Sem divisão". */
 export function validarNomeDivisao(entrada: unknown): { ok: true; nome: string } | { ok: false; erro: string } {
   const nome = String(entrada ?? "").trim().replace(/\s+/g, " ");
-  if (!nome) return { ok: false, erro: "O nome da divisão é obrigatório." };
+  if (!nome) return { ok: false, erro: "O nome é obrigatório." };
   if (nome.length > LIMITE_NOME_DIVISAO) return { ok: false, erro: `O nome tem no máximo ${LIMITE_NOME_DIVISAO} caracteres.` };
   if (chaveNome(nome) === chaveNome(SEM_DIVISAO)) return { ok: false, erro: `«${SEM_DIVISAO}» é um nome reservado.` };
   return { ok: true, nome };
@@ -107,12 +107,12 @@ export function chaveNome(nome: string): string {
   return nome.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 }
 
-/** Orçamento máximo de uma divisão; vazio = sem orçamento (null). */
+/** Limite de uma divisão; vazio = sem limite (null). */
 export function validarOrcamento(entrada: unknown): { ok: true; valor: number | null } | { ok: false; erro: string } {
   if (entrada == null || (typeof entrada === "string" && !entrada.trim())) return { ok: true, valor: null };
   const v = lerValor(entrada);
-  if (v == null || v < 0) return { ok: false, erro: "O orçamento tem de ser um número igual ou maior que zero." };
-  if (v >= 1e10) return { ok: false, erro: "O orçamento é demasiado grande." };
+  if (v == null || v < 0) return { ok: false, erro: "O limite tem de ser um número igual ou maior que zero." };
+  if (v >= 1e10) return { ok: false, erro: "O limite é demasiado grande." };
   return { ok: true, valor: v };
 }
 
@@ -140,7 +140,7 @@ export function validarDivisoes(
     const orcamento = validarOrcamento(c.orcamento);
     if (!orcamento.ok) return { ok: false, erro: `${nome.nome}: ${orcamento.erro}` };
     const k = chaveNome(nome.nome);
-    if (vistos.has(k)) return { ok: false, erro: `Há duas divisões com o nome "${nome.nome}".` };
+    if (vistos.has(k)) return { ok: false, erro: `Há duas divisões com o nome «${nome.nome}».` };
     vistos.add(k);
     divisoes.push({ id, nome: nome.nome, orcamento: orcamento.valor });
   }

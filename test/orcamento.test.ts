@@ -69,7 +69,7 @@ describe("validação das divisões", () => {
     expect(validarNomeDivisao("Não aplicável").ok).toBe(true);
   });
 
-  test("orçamento: vazio = sem orçamento", () => {
+  test("limite: vazio = sem limite", () => {
     expect(validarOrcamento("")).toEqual({ ok: true, valor: null });
     expect(validarOrcamento("2 500,50")).toEqual({ ok: true, valor: 2500.5 });
     expect(validarOrcamento("0")).toEqual({ ok: true, valor: 0 });
@@ -102,11 +102,11 @@ describe("validação das divisões", () => {
     expect(r.ok).toBe(false);
   });
 
-  test("recusa orçamento inválido indicando a divisão", () => {
+  test("recusa um limite inválido indicando a divisão", () => {
     const r = validarDivisoes([
       ["nome:1", "Sala"],
       ["orcamento:1", "muito"],
     ]);
-    expect(r).toEqual({ ok: false, erro: "Sala: O orçamento tem de ser um número igual ou maior que zero." });
+    expect(r).toEqual({ ok: false, erro: "Sala: O limite tem de ser um número igual ou maior que zero." });
   });
 });
