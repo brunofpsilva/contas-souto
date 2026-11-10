@@ -33,7 +33,7 @@ async function divisaoExiste(id: number | null): Promise<boolean> {
   return Boolean(d);
 }
 
-const DIVISAO_APAGADA = { divisaoId: "Esta divisão já não existe (pode ter sido apagada). Escolhe outra." };
+const DIVISAO_APAGADA = { divisaoId: "Esta divisão já não existe. É preciso escolher outra." };
 
 export async function criarDespesa(_anterior: EstadoFormDespesa, form: FormData): Promise<EstadoFormDespesa> {
   const eu = await exigirUtilizador();
@@ -58,10 +58,10 @@ export async function criarDespesa(_anterior: EstadoFormDespesa, form: FormData)
 export async function atualizarDespesa(id: number, _anterior: EstadoFormDespesa, form: FormData): Promise<EstadoFormDespesa> {
   const eu = await exigirUtilizador();
   const valores = lerForm(form);
-  if (!idValido(id)) return { erros: {}, mensagem: "Despesa inválida.", valores };
+  if (!idValido(id)) return { erros: {}, mensagem: "Esta despesa já não existe.", valores };
 
   const [atual] = await db.select().from(t).where(eq(t.id, id)).limit(1);
-  if (!atual) return { erros: {}, mensagem: "Esta despesa já não existe (pode ter sido apagada).", valores };
+  if (!atual) return { erros: {}, mensagem: "Esta despesa já não existe.", valores };
 
   const r = validarDespesa(valores, await obterDatas());
   if (!r.ok) return { erros: r.erros, valores };
@@ -86,10 +86,10 @@ export async function atualizarDespesa(id: number, _anterior: EstadoFormDespesa,
 
 export type ResultadoAcao = { ok: true } | { ok: false; mensagem: string };
 
-/** Marca como paga ou volta a prevista. Guarda quem marcou e quando. */
+/** Marca como paga ou volta a por pagar. Guarda quem marcou e quando. */
 export async function definirEstado(id: number, estado: "pago" | "previsto"): Promise<ResultadoAcao> {
   const eu = await exigirUtilizador();
-  if (!idValido(id) || (estado !== "pago" && estado !== "previsto")) return { ok: false, mensagem: "Pedido inválido." };
+  if (!idValido(id) || (estado !== "pago" && estado !== "previsto")) return { ok: false, mensagem: "Algo correu mal." };
 
   const pago = estado === "pago";
   const linhas = await db
@@ -108,10 +108,12 @@ export async function definirEstado(id: number, estado: "pago" | "previsto"): Pr
   return linhas.length ? { ok: true } : { ok: false, mensagem: "Esta despesa já não existe." };
 }
 
-export async function apagarDespesa(id: number): Promise<ResultadoAcao> {
+/** Apaga a despesa e volta à lista. Só devolve alguma coisa se correr mal. */
+export async function apagarDespesa(id: number): Promise<{ ok: false; mensagem: string }> {
   await exigirUtilizador();
-  if (!idValido(id)) return { ok: false, mensagem: "Pedido inválido." };
+  if (!idValido(id)) return { ok: false, mensagem: "Algo correu mal." };
   const linhas = await db.delete(t).where(eq(t.id, id)).returning({ id: t.id });
   revalidatePath("/", "layout");
-  return linhas.length ? { ok: true } : { ok: false, mensagem: "Esta despesa já tinha sido apagada." };
+  if (!linhas.length) return { ok: false, mensagem: "Esta despesa já não existe." };
+  redirect("/despesas");
 }

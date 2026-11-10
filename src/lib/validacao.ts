@@ -74,11 +74,11 @@ export function validarDespesa(
   if (!descricao) erros.descricao = "A descrição é obrigatória.";
   else if (descricao.length > LIMITE_DESCRICAO) erros.descricao = `A descrição tem no máximo ${LIMITE_DESCRICAO} caracteres.`;
   if (valor == null) erros.valor = "O valor tem de ser um número, por exemplo 1 234,56.";
-  else if (valor < 0) erros.valor = "O valor tem de ser igual ou maior que zero.";
+  else if (valor < 0) erros.valor = "O valor não pode ser negativo.";
   else if (valor >= 1e10) erros.valor = "O valor é demasiado grande.";
   if (naEscritura && !dataEscritura) erros.mes = "Sem data da escritura. Define-se em Definições.";
   else if (naConclusaoObra && !dataConclusaoObra) erros.mes = "Sem data do fim da obra. Define-se em Definições.";
-  else if (!eMesValido(mes)) erros.mes = "Escolhe o mês (AAAA-MM).";
+  else if (!eMesValido(mes)) erros.mes = "O mês é obrigatório (AAAA-MM).";
   if (nota.length > LIMITE_NOTA) erros.nota = `A nota tem no máximo ${LIMITE_NOTA} caracteres.`;
 
   if (Object.keys(erros).length) return { ok: false, erros };

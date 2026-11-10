@@ -1,102 +1,110 @@
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ListaDespesas } from "@/components/lista-despesas";
+import { LinhaDespesa } from "@/components/linha-despesa";
+import { SegmentosLigacoes } from "@/components/segmentos";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Valor } from "@/components/valor";
+import { agruparPorMes } from "@/lib/agrupar";
+import { cicloDe } from "@/lib/ciclo";
 import { listarDespesas, listarDivisoes, obterDatas } from "@/lib/dados";
 import { SEM_DIVISAO } from "@/lib/dominio";
-import { euros } from "@/lib/formato";
-import { cicloDe } from "@/lib/ciclo";
-import { cn } from "@/lib/utils";
+import { maiuscula, plural } from "@/lib/formato";
+import { mesLongo } from "@/lib/meses";
+import { hrefNovaDespesa } from "@/lib/rotas";
+import { FiltroDivisao } from "./filtro-divisao";
 
 export const metadata: Metadata = { title: "Despesas" };
 
+// Ao abrir, a lista mostra o que falta pagar (?ver=pagas e ?ver=todas mostram o resto).
 const FILTROS = [
-  { valor: "todas", texto: "Todas" },
   { valor: "por-pagar", texto: "Por pagar" },
   { valor: "pagas", texto: "Pagas" },
+  { valor: "todas", texto: "Todas" },
 ] as const;
+type Filtro = (typeof FILTROS)[number]["valor"];
+
+const VAZIO: Record<Filtro, { geral: string; naDivisao: (nome: string) => string }> = {
+  "por-pagar": { geral: "Nada por pagar.", naDivisao: (nome) => `Nada por pagar em ${nome}.` },
+  pagas: { geral: "Ainda não há despesas pagas.", naDivisao: (nome) => `Sem despesas pagas em ${nome}.` },
+  todas: { geral: "Ainda não há despesas.", naDivisao: (nome) => `Sem despesas em ${nome}.` },
+};
 
 export default async function DespesasPage({ searchParams }: PageProps<"/despesas">) {
   const { ver, divisao } = await searchParams;
-  const filtro = FILTROS.find((f) => f.valor === ver)?.valor ?? "todas";
+  const filtro: Filtro = FILTROS.find((f) => f.valor === ver)?.valor ?? "por-pagar";
   const [todas, datas, divisoes] = await Promise.all([listarDespesas(), obterDatas(), listarDivisoes()]);
   const mesAtual = cicloDe(new Date());
   // ?divisao=ID ou ?divisao=nenhuma (Sem divisão); outra coisa não filtra.
   const daDivisao = divisao === "nenhuma" ? { id: null, nome: SEM_DIVISAO } : divisoes.find((d) => String(d.id) === divisao);
+  const chaveDivisao = daDivisao ? (daDivisao.id == null ? "nenhuma" : String(daDivisao.id)) : "";
+
   const lista = todas.filter(
-    (d) =>
-      (filtro === "todas" || (filtro === "pagas") === (d.estado === "pago")) &&
-      (!daDivisao || d.divisaoId === daDivisao.id),
+    (d) => (filtro === "todas" || (filtro === "pagas") === (d.estado === "pago")) && (!daDivisao || d.divisaoId === daDivisao.id),
   );
-  const ligacao = (f: string) => {
+  const grupos = agruparPorMes(lista, mesAtual);
+  const total = Math.round(lista.reduce((s, d) => s + d.valor, 0) * 100) / 100;
+
+  const href = (f: Filtro, div: string) => {
     const q = new URLSearchParams();
-    if (f !== "todas") q.set("ver", f);
-    if (daDivisao) q.set("divisao", daDivisao.id == null ? "nenhuma" : String(daDivisao.id));
+    if (f !== "por-pagar") q.set("ver", f);
+    if (div) q.set("divisao", div);
     const t = q.toString();
     return t ? `/despesas?${t}` : "/despesas";
   };
-  const total = lista.reduce((s, d) => s + d.valor, 0);
+  const opcoesDivisao = [
+    { valor: "", texto: "Todas as divisões" },
+    ...divisoes.map((d) => ({ valor: String(d.id), texto: d.nome })),
+    { valor: "nenhuma", texto: SEM_DIVISAO },
+  ].map((o) => ({ ...o, href: href(filtro, o.valor) }));
 
   return (
-    <>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-muted-foreground text-sm">
-            {lista.length} despesa{lista.length === 1 ? "" : "s"} · <span className="tabular-nums">{euros(total)}</span>
-          </p>
-        </div>
-        <Button asChild>
-          <Link href={daDivisao?.id != null ? `/despesas/nova?divisao=${daDivisao.id}` : "/despesas/nova"}>
-            <Plus aria-hidden />
-            Nova despesa
-          </Link>
-        </Button>
+    <div className="grid gap-4">
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,22rem)_minmax(0,16rem)] sm:justify-between">
+        <SegmentosLigacoes
+          rotulo="Filtrar despesas"
+          opcoes={FILTROS.map((f) => ({ href: href(f.valor, chaveDivisao), texto: f.texto, ativa: f.valor === filtro }))}
+        />
+        {(divisoes.length > 0 || daDivisao) && <FiltroDivisao key={chaveDivisao} valor={chaveDivisao} opcoes={opcoesDivisao} />}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        {/* No telemóvel os filtros ocupam a largura toda, com o mesmo tamanho cada. */}
-        <nav aria-label="Filtrar despesas" className="bg-secondary grid w-full grid-cols-3 gap-1 rounded-lg p-1 sm:flex sm:w-fit">
-          {FILTROS.map((f) => (
-            <Link
-              key={f.valor}
-              href={ligacao(f.valor)}
-              aria-current={filtro === f.valor ? "page" : undefined}
-              className={cn(
-                "flex h-9 items-center justify-center rounded-md px-3 text-sm font-medium",
-                filtro === f.valor ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {f.texto}
+      {grupos.length === 0 ? (
+        <Card className="grid justify-items-start gap-3 p-4">
+          <p>{daDivisao ? VAZIO[filtro].naDivisao(daDivisao.nome) : VAZIO[filtro].geral}</p>
+          <Button asChild variant="outline" className="max-sm:w-full">
+            <Link href={hrefNovaDespesa(daDivisao?.id != null ? String(daDivisao.id) : null)}>
+              <Plus aria-hidden />
+              Adicionar despesa
             </Link>
+          </Button>
+        </Card>
+      ) : (
+        <>
+          <p className="text-texto-suave flex items-baseline justify-between gap-3 px-1 text-sm">
+            <span>{plural(lista.length, "despesa")}</span>
+            <Valor v={total} className="text-texto font-medium" />
+          </p>
+
+          {grupos.map((g) => (
+            <section key={g.mes} aria-labelledby={`mes-${g.mes}`} className="grid gap-2">
+              <div className="flex items-baseline justify-between gap-3 px-1">
+                <h2 id={`mes-${g.mes}`} className="font-semibold">
+                  {maiuscula(mesLongo(g.mes))}
+                </h2>
+                <Valor v={g.porPagar + g.pago} className="text-texto-suave text-sm" />
+              </div>
+              <Card>
+                <ul className="divide-y">
+                  {g.despesas.map((d) => (
+                    <LinhaDespesa key={d.id} d={d} datas={datas} />
+                  ))}
+                </ul>
+              </Card>
+            </section>
           ))}
-        </nav>
-        {daDivisao && (
-          <p className="bg-secondary inline-flex max-w-full items-center gap-1 rounded-full py-0.5 pr-0.5 pl-3 text-sm">
-            <span className="truncate">
-              Divisão: <span className="font-medium">{daDivisao.nome}</span>
-            </span>
-            <Link
-              href={filtro === "todas" ? "/despesas" : `/despesas?ver=${filtro}`}
-              className="text-muted-foreground hover:text-foreground hover:bg-card flex size-8 shrink-0 items-center justify-center rounded-full"
-              aria-label="Ver todas as divisões"
-            >
-              <X className="size-4" aria-hidden />
-            </Link>
-          </p>
-        )}
-      </div>
-
-      <ListaDespesas
-        despesas={lista}
-        mesAtual={mesAtual}
-        datas={datas}
-        vazio={
-          daDivisao
-            ? `Não há despesas${filtro === "pagas" ? " pagas" : filtro === "por-pagar" ? " por pagar" : ""} em ${daDivisao.nome}.`
-            : filtro === "pagas" ? "Ainda não há despesas pagas." : filtro === "por-pagar" ? "Nada por pagar." : "Ainda não há despesas. Adiciona a primeira."
-        }
-      />
-    </>
+        </>
+      )}
+    </div>
   );
 }

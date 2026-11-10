@@ -41,11 +41,12 @@ export function Confirmar({
         </div>
         <div className="grid grid-cols-2 gap-2">
           <AlertDialogCancel asChild>
-            <Button variant="outline" disabled={aCorrer}>
+            <Button type="button" variant="outline" disabled={aCorrer}>
               Cancelar
             </Button>
           </AlertDialogCancel>
           <Button
+            type="button"
             variant="destructive"
             disabled={aCorrer}
             onClick={() =>

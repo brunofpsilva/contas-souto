@@ -1,8 +1,10 @@
+import { CircleCheck } from "lucide-react";
 import type { Metadata } from "next";
 import { criarDespesa } from "@/actions/despesas";
 import { FormDespesa } from "@/components/form-despesa";
-import { listarDivisoes, obterDatas } from "@/lib/dados";
+import { Alert } from "@/components/ui/alert";
 import { cicloDe } from "@/lib/ciclo";
+import { listarDivisoes, obterDatas } from "@/lib/dados";
 
 export const metadata: Metadata = { title: "Nova despesa" };
 
@@ -11,13 +13,14 @@ export default async function NovaDespesaPage({ searchParams }: PageProps<"/desp
   return (
     <>
       {adicionada && (
-        <p role="status" className="bg-ok-suave text-ok w-fit rounded-lg px-3 py-2 text-sm">
-          Despesa adicionada. Podes adicionar a próxima.
-        </p>
+        <Alert variant="positivo" className="max-w-xl">
+          <CircleCheck aria-hidden />
+          <span>Despesa adicionada.</span>
+        </Alert>
       )}
       <FormDespesa
         acao={criarDespesa}
-        textoBotao="Adicionar"
+        textoBotao="Adicionar despesa"
         permitirOutra
         datas={datas}
         divisoes={divisoes}
@@ -27,7 +30,7 @@ export default async function NovaDespesaPage({ searchParams }: PageProps<"/desp
           mes: cicloDe(new Date()),
           quando: "mes",
           categoria: "Outros",
-          // Vindo da página Orçamento (?divisao=ID), já vem escolhida.
+          // Vindo de uma lista filtrada por divisão (?divisao=ID), já vem escolhida.
           divisao: typeof divisao === "string" ? divisao : "nenhuma",
           estado: "previsto",
           nota: "",
