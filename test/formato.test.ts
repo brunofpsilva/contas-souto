@@ -62,7 +62,7 @@ describe("textos", () => {
 
 describe("textoEstado", () => {
   const hoje = new Date("2026-10-20T12:00:00Z");
-  test("as quatro frases", () => {
+  test("as frases de cada estado", () => {
     const desp = [{ valor: 800, mes: "2026-12", estado: "previsto" as const }];
     expect(textoEstado(calcularPrevisao({ hoje, disponivel: 500, despesas: desp }).resumo).texto).toBe(
       "Falta dinheiro em dezembro de 2026",
@@ -70,10 +70,9 @@ describe("textoEstado", () => {
     expect(textoEstado(calcularPrevisao({ hoje, disponivel: 1000, despesas: desp, reserva: 500 }).resumo).texto).toBe(
       "Abaixo da reserva em dezembro de 2026",
     );
-    expect(n(textoEstado(calcularPrevisao({ hoje, disponivel: 2000, despesas: desp }).resumo).texto)).toBe(
-      "Chega para tudo · mínimo 1 200 €",
-    );
+    expect(textoEstado(calcularPrevisao({ hoje, disponivel: 2000, despesas: desp }).resumo).texto).toBe("Chega para tudo");
     expect(textoEstado(calcularPrevisao({ hoje, disponivel: 2000, despesas: [] }).resumo).texto).toBe("Nada por pagar");
+    expect(textoEstado(calcularPrevisao({ hoje, disponivel: null, despesas: desp }).resumo).texto).toBe("Sem saldos");
   });
 
   test("diz em que marco falta o dinheiro", () => {

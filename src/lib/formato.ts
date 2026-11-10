@@ -57,14 +57,10 @@ export function plural(n: number, singular: string, variosTexto = `${singular}s`
 export type TomEstado = "ok" | "aviso" | "mau" | "neutro";
 
 /**
- * Frase do estado geral, como na versão antiga. Com `p`, se o alerta vem dos pagamentos
- * de um marco (o saldo só fica abaixo do limite depois dele), diz "na escritura" ou
- * "no fim da obra" em vez do mês.
+ * Frase do estado geral. Com `p`, se o alerta vem dos pagamentos de um marco (o saldo só
+ * fica abaixo do limite depois dele), diz "na escritura" ou "no fim da obra" em vez do mês.
  */
-export function textoEstado(
-  r: ResumoPrevisao,
-  p?: Pick<Previsao, "marcos" | "reserva">,
-): { texto: string; tom: TomEstado; /** O valor no fim do texto, para o poder esconder. */ valor?: string } {
+export function textoEstado(r: ResumoPrevisao, p?: Pick<Previsao, "marcos" | "reserva">): { texto: string; tom: TomEstado } {
   let quando = `em ${mesPorExtenso(r.mesAlerta ?? "")}`;
   const limite = r.estado === "falta" ? 0 : (p?.reserva ?? 0);
   const doMes = p?.marcos.filter((m) => m.mes === r.mesAlerta) ?? [];
@@ -77,13 +73,11 @@ export function textoEstado(
       return { texto: `Falta dinheiro ${quando}`, tom: "mau" };
     case "abaixo-reserva":
       return { texto: `Abaixo da reserva ${quando}`, tom: "aviso" };
-    case "ok": {
-      const valor = euros(r.saldoMinimo, { inteiro: true });
-      return { texto: `Chega para tudo · mínimo ${valor}`, tom: "ok", valor };
-    }
+    case "ok":
+      return { texto: "Chega para tudo", tom: "ok" };
     case "nada-por-pagar":
       return { texto: "Nada por pagar", tom: "neutro" };
     case "sem-saldos":
-      return { texto: "Sem saldos do Wallet", tom: "neutro" };
+      return { texto: "Sem saldos", tom: "neutro" };
   }
 }

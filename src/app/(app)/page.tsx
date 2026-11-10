@@ -1,25 +1,31 @@
+import { ChevronRight, Plus, TriangleAlert } from "lucide-react";
 import Link from "next/link";
-import { BarraOrcamento, LegendaOrcamento, TextoRestante } from "@/components/barra-orcamento";
-import { ListaDespesas } from "@/components/lista-despesas";
-import { totaisPorCategoria } from "@/lib/agrupar";
-import { listarDespesas, listarDivisoes, obterContas, obterDatas, obterTendencia } from "@/lib/dados";
-import { dataCurta, MARCOS } from "@/lib/escritura";
-import { dataHora, euros, maiuscula, textoEstado, type TomEstado } from "@/lib/formato";
-import { mesPorExtenso } from "@/lib/meses";
-import { PRIVADO } from "@/lib/privacidade";
-import { calcularOrcamento } from "@/lib/orcamento";
+import { BotaoAtualizar } from "@/components/botao-atualizar";
+import { EstadoPrevisao } from "@/components/estado-previsao";
+import { LinhaDespesa } from "@/components/linha-despesa";
+import { Seccao } from "@/components/seccao";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Valor } from "@/components/valor";
+import { listarDespesas, obterContas, obterDatas, obterTendencia } from "@/lib/dados";
+import { dataHora, euros } from "@/lib/formato";
+import { proximosPagamentos, resumoInicio } from "@/lib/inicio";
 import { calcularPrevisao } from "@/lib/previsao";
+import { PRIVADO } from "@/lib/privacidade";
 import { estadoSync } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 
-export default async function ResumoPage() {
-  const [despesas, contas, sync, datas, tendencia, divisoes] = await Promise.all([
+const LIGACAO = "text-primaria focus-visible:ring-ring/50 rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3";
+
+/** O Início responde a uma pergunta: chega o dinheiro, e quanto sobra? O resto está nos outros separadores. */
+export default async function InicioPage() {
+  const [despesas, contas, sync, datas, tendencia] = await Promise.all([
     listarDespesas(),
     obterContas(),
     estadoSync(),
     obterDatas(),
     obterTendencia(),
-    listarDivisoes(),
   ]);
   const p = calcularPrevisao({
     despesas,
@@ -29,232 +35,111 @@ export default async function ResumoPage() {
     fluxos: tendencia.fluxos,
   });
   const r = p.resumo;
-  const estado = textoEstado(r, p);
-  const categorias = totaisPorCategoria(despesas);
-  const maxCategoria = Math.max(1, ...categorias.map((c) => c.total));
-  const porPagar = despesas.filter((d) => d.estado !== "pago");
-  const orcamento = calcularOrcamento(divisoes, despesas);
-  // Só as divisões com orçamento ou com despesas (e Sem divisão se tiver despesas).
-  const linhasOrcamento = [...orcamento.divisoes, orcamento.naoAplicavel].filter((l) => l.orcamento != null || l.nDespesas > 0);
-  const nContas = contas.contas.filter((c) => c.incluida).length;
-  const ultimoMes = p.meses.at(-1);
-  // No topo: o saldo depois do último marco (a frase da previsão mostra também o fim).
-  const saldoFinal = p.fim?.depois ? p.fim.depois.base : ultimoMes ? ultimoMes.saldo : r.disponivel;
+  const resumo = resumoInicio(p);
+  const proximos = proximosPagamentos(despesas, p.mesAtual);
+  const semDatas = !datas.dataEscritura && !datas.dataConclusaoObra;
 
   return (
-    <>
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div className="space-y-2">
-          <Estado tom={estado.tom}>
-            {estado.valor ? (
-              <span>
-                {estado.texto.slice(0, -estado.valor.length)}
-                <span className={PRIVADO}>{estado.valor}</span>
-              </span>
-            ) : (
-              estado.texto
-            )}
-          </Estado>
-        </div>
-        <p className="text-muted-foreground text-xs">
-          {sync.ultimaOk ? (
-            <>Saldos de {dataHora(sync.ultimaOk.terminadaEm ?? sync.ultimaOk.iniciadaEm)}</>
+    <div className="grid gap-4 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-start md:gap-6">
+      <div className="grid gap-3">
+        <Card className="grid gap-1 p-4">
+          <EstadoPrevisao tom={resumo.tom}>{resumo.titulo}</EstadoPrevisao>
+          {resumo.valor != null ? (
+            <>
+              {/* O número grande. A cor fica no span de dentro: "text-numero" e "text-negativo" juntos anulavam-se. */}
+              <p className="text-numero mt-2 font-semibold">
+                <span className="sr-only">Saldo previsto: </span>
+                <span className={cn(PRIVADO, resumo.valor < 0 && "text-negativo")}>{euros(resumo.valor, { inteiro: true })}</span>
+              </p>
+              <p className="text-texto-suave text-sm">{resumo.contexto}</p>
+              {resumo.extra && (
+                <p className="text-texto-suave text-sm">
+                  {resumo.extra.texto}: <Valor v={resumo.extra.valor} inteiro privado className="text-texto font-medium" />
+                </p>
+              )}
+            </>
           ) : (
             <>
-              Sem saldos.{" "}
-              <Link href="/definicoes" className="text-primary underline underline-offset-2">
-                Sincronizar com Wallet
-              </Link>
+              <p className="text-texto-suave mt-2 text-sm">A previsão precisa dos saldos do Wallet.</p>
+              <BotaoAtualizar variante="default" className="mt-3" />
             </>
           )}
-          {sync.ultimoErro && (
-            <Link href="/definicoes" className="text-destructive ml-2 underline underline-offset-2">
-              A última sincronização falhou
+
+          <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-2">
+            <Link href="/definicoes#contas" className="focus-visible:ring-ring/50 grid min-h-11 content-center rounded-sm outline-none focus-visible:ring-3">
+              <span className="text-texto-suave text-sm">Saldo hoje</span>
+              <Valor v={r.disponivel} inteiro privado className="font-medium" />
             </Link>
-          )}
-        </p>
-      </header>
+            <Link
+              href="/despesas?ver=por-pagar"
+              className="focus-visible:ring-ring/50 grid min-h-11 content-center justify-items-end rounded-sm outline-none focus-visible:ring-3"
+            >
+              <span className="text-texto-suave text-sm">Por pagar</span>
+              <Valor v={r.porPagar} inteiro className="font-medium" />
+            </Link>
+          </div>
+        </Card>
 
-      <section aria-label="Números principais" className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-xl border md:grid-cols-4">
-        <Numero rotulo="Disponível hoje" valor={euros(r.disponivel)} privado nota={`${nContas} conta${nContas === 1 ? "" : "s"}`} />
-        <Numero rotulo="Por pagar" valor={euros(r.porPagar)} nota={`${r.nPorPagar} despesa${r.nPorPagar === 1 ? "" : "s"}`} />
-        <Numero rotulo="Já pago" valor={euros(r.pago)} nota={`${r.nPagas} despesa${r.nPagas === 1 ? "" : "s"}`} />
-        <Numero
-          rotulo={p.fim ? maiuscula(MARCOS[p.fim.tipo].depois) : "Saldo no fim"}
-          valor={euros(saldoFinal)}
-          nota={p.fim ? dataCurta(p.fim.data) : ultimoMes ? mesPorExtenso(ultimoMes.mes) : ""}
-          mau={saldoFinal != null && saldoFinal < 0}
-          privado
-        />
-      </section>
-
-      {!p.escritura && (
-        <p className="text-muted-foreground text-sm">
-          {p.fim
-            ? "Sem data da escritura, a previsão vai até à conclusão da obra."
-            : "Sem data da escritura nem da conclusão da obra, a previsão mostra os próximos meses."}{" "}
-          <Link href="/definicoes" className="text-primary underline underline-offset-2">
-            {p.fim ? "Definir a data da escritura" : "Definir as datas"}
-          </Link>
-        </p>
-      )}
-
-      <section aria-labelledby="titulo-categorias" className="grid gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="titulo-categorias" className="font-bold">
-            Por categoria
-          </h2>
-          <Legenda />
-        </div>
-        {categorias.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Ainda não há despesas.</p>
+        {sync.ultimoErro ? (
+          <Alert variant="aviso">
+            <TriangleAlert aria-hidden />
+            <span>
+              A última atualização falhou.{" "}
+              <Link href="/definicoes#contas" className="font-medium underline underline-offset-4">
+                Ver
+              </Link>
+            </span>
+          </Alert>
         ) : (
-          <ul className="bg-card grid gap-4 rounded-xl border p-4">
-            {categorias.map((c) => (
-              <li key={c.categoria} className="grid gap-1.5">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-4 text-sm">
-                  <span className="font-medium">{c.categoria}</span>
-                  <span className="text-muted-foreground text-xs tabular-nums">
-                    {c.pago > 0 && <>pago {euros(c.pago)}</>}
-                    {c.pago > 0 && c.porPagar > 0 && " · "}
-                    {c.porPagar > 0 && <>por pagar {euros(c.porPagar)}</>}
-                    <span className="text-foreground ml-2">{euros(c.total)}</span>
-                  </span>
-                </div>
-                <div className="flex h-2.5 gap-0.5" aria-hidden>
-                  {c.pago > 0 && (
-                    <span className="bg-grafico-1 last:rounded-r-[4px]" style={{ width: `${(c.pago / maxCategoria) * 100}%` }} />
-                  )}
-                  {c.porPagar > 0 && (
-                    <span className="bg-grafico-2 rounded-r-[4px]" style={{ width: `${(c.porPagar / maxCategoria) * 100}%` }} />
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+          sync.ultimaOk && <p className="text-texto-suave px-1 text-xs">Atualizado {dataHora(sync.ultimaOk.terminadaEm ?? sync.ultimaOk.iniciadaEm)}</p>
         )}
-      </section>
 
-      <section aria-labelledby="titulo-divisoes" className="grid gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="titulo-divisoes" className="font-bold">
-            Por divisão
-          </h2>
-          <Link href="/orcamento" className="text-primary -my-2 py-2 text-sm underline-offset-2 hover:underline">
-            Editar orçamento
-          </Link>
-        </div>
-        {linhasOrcamento.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Ainda não há orçamento por divisão.{" "}
-            <Link href="/orcamento" className="text-primary underline underline-offset-2">
-              Definir o orçamento
-            </Link>
-          </p>
-        ) : (
-          <div className="bg-card grid gap-4 rounded-xl border p-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b pb-3 text-sm">
-              <span>
-                <span className="font-medium">Orçamento geral</span>{" "}
-                <span className="text-muted-foreground text-xs tabular-nums">
-                  {euros(orcamento.geral.total)} de {euros(orcamento.geral.orcamento)}
-                </span>
+        {semDatas && (
+          <Card>
+            <Link
+              href="/definicoes#datas"
+              className="focus-visible:ring-ring/50 flex min-h-12 items-center justify-between gap-3 rounded-xl px-4 outline-none focus-visible:ring-3"
+            >
+              <span>Sem datas definidas.</span>
+              <span className="text-primaria flex items-center gap-1 font-medium">
+                Definir
+                <ChevronRight className="size-4" aria-hidden />
               </span>
-              <TextoRestante l={orcamento.geral} className="text-xs" />
-            </div>
-            <ul className="grid gap-4">
-              {linhasOrcamento.map((l) => (
-                <li key={l.id ?? "nenhuma"} className="grid gap-1.5">
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 text-sm">
-                    <span className="font-medium">{l.nome}</span>
-                    <span className="text-xs tabular-nums">
-                      {euros(l.total)}
-                      {l.orcamento != null && <span className="text-muted-foreground"> / {euros(l.orcamento)}</span>}
-                      <TextoRestante l={l} className="ml-2" />
-                    </span>
-                  </div>
-                  <BarraOrcamento l={l} />
-                </li>
+            </Link>
+          </Card>
+        )}
+      </div>
+
+      <Seccao
+        titulo="Próximos pagamentos"
+        acao={
+          proximos.length > 0 && (
+            <Link href="/despesas?ver=por-pagar" className={cn(LIGACAO, "flex min-h-11 items-center text-sm")}>
+              Ver todas
+            </Link>
+          )
+        }
+      >
+        {proximos.length > 0 ? (
+          <Card>
+            <ul className="divide-y">
+              {proximos.map((d) => (
+                <LinhaDespesa key={d.id} d={d} datas={datas} resumida />
               ))}
             </ul>
-            <LegendaOrcamento />
-          </div>
+          </Card>
+        ) : (
+          <Card className="grid justify-items-start gap-3 p-4">
+            <p>{despesas.length ? "Nada por pagar." : "Ainda não há despesas."}</p>
+            <Button asChild variant="outline" className="max-sm:w-full">
+              <Link href="/despesas/nova">
+                <Plus aria-hidden />
+                Adicionar despesa
+              </Link>
+            </Button>
+          </Card>
         )}
-      </section>
-
-      <section aria-labelledby="titulo-por-pagar" className="grid gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="titulo-por-pagar" className="font-bold">
-            Despesas por pagar
-          </h2>
-          <Link href="/despesas" className="text-primary -my-2 py-2 text-sm underline-offset-2 hover:underline">
-            Ver todas e adicionar
-          </Link>
-        </div>
-        <ListaDespesas despesas={porPagar} mesAtual={p.mesAtual} datas={datas} vazio="Nada por pagar." />
-      </section>
-    </>
-  );
-}
-
-function Numero({
-  rotulo,
-  valor,
-  nota,
-  mau = false,
-  privado = false,
-}: {
-  rotulo: string;
-  valor: string;
-  nota?: string;
-  mau?: boolean;
-  /** Desfocado quando os saldos estão escondidos. */
-  privado?: boolean;
-}) {
-  return (
-    <div className="bg-card grid min-w-0 content-start gap-1 px-3 py-3 sm:px-4">
-      <p className="text-muted-foreground text-[0.6875rem] leading-tight font-semibold tracking-wider uppercase sm:text-xs">{rotulo}</p>
-      <p
-        className={cn(
-          "truncate text-lg font-semibold tabular-nums min-[400px]:text-xl sm:text-2xl",
-          mau && "text-destructive",
-          privado && PRIVADO,
-        )}
-      >
-        {valor}
-      </p>
-      {nota && <p className="text-muted-foreground truncate text-xs first-letter:uppercase">{nota}</p>}
+      </Seccao>
     </div>
-  );
-}
-
-function Estado({ tom, children }: { tom: TomEstado; children: React.ReactNode }) {
-  const estilos: Record<TomEstado, string> = {
-    ok: "bg-ok-suave text-ok",
-    aviso: "bg-aviso-suave text-aviso",
-    mau: "bg-mau-suave text-destructive",
-    neutro: "bg-secondary text-muted-foreground",
-  };
-  return (
-    // Cantos menos redondos para não ficar estranho quando o texto ocupa duas linhas no telemóvel.
-    <p role="status" className={cn("inline-flex items-start gap-2 rounded-2xl px-3 py-1.5 text-sm font-semibold", estilos[tom])}>
-      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-current" aria-hidden />
-      {children}
-    </p>
-  );
-}
-
-function Legenda() {
-  return (
-    <p className="text-muted-foreground flex gap-4 text-xs">
-      <span className="flex items-center gap-1.5">
-        <span className="bg-grafico-1 size-2.5 rounded-[3px]" aria-hidden />
-        Pago
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span className="bg-grafico-2 size-2.5 rounded-[3px]" aria-hidden />
-        Por pagar
-      </span>
-    </p>
   );
 }
