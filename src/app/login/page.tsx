@@ -2,42 +2,43 @@ import { CircleX } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
-import { utilizadorAtual } from "@/lib/auth";
-import { BotaoGoogle } from "./botao-google";
+import { getT } from "@/i18n/server";
+import { currentUser } from "@/lib/auth";
+import { GoogleButton } from "./google-button";
 
-export const metadata: Metadata = { title: "Entrar" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).login.title };
+}
 
-// O que aconteceu, sem nomes técnicos. O botão por baixo já serve para tentar de novo.
-const SEM_ACESSO = "Este email não tem acesso.";
-const COM_GOOGLE = "Não foi possível entrar com o Google.";
-const GERAL = "Não foi possível entrar.";
-const ERROS: Record<string, string> = {
-  AccessDenied: SEM_ACESSO,
-  OAuthSignin: COM_GOOGLE,
-  OAuthCallback: COM_GOOGLE,
+// What happened, without technical names. The button below already works for trying again.
+const ERRORS: Record<string, "noAccess" | "googleFailed"> = {
+  AccessDenied: "noAccess",
+  OAuthSignin: "googleFailed",
+  OAuthCallback: "googleFailed",
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  if (await utilizadorAtual()) redirect("/");
+  if (await currentUser()) redirect("/");
+  const t = await getT();
   const { error } = await searchParams;
-  const codigo = Array.isArray(error) ? error[0] : error;
-  const mensagem = codigo ? (ERROS[codigo] ?? GERAL) : null;
-  // O detalhe (por exemplo "Configuration") fica no log do servidor.
-  if (codigo && !ERROS[codigo]) console.error(`[login] ${codigo}`);
+  const code = Array.isArray(error) ? error[0] : error;
+  const message = code ? t.login[ERRORS[code] ?? "failed"] : null;
+  // The detail (for example "Configuration") stays in the server log.
+  if (code && !ERRORS[code]) console.error(`[login] ${code}`);
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-4 pt-[max(4rem,env(safe-area-inset-top))] pb-[max(4rem,env(safe-area-inset-bottom))]">
       <div className="grid gap-1">
-        <h1 className="text-2xl font-semibold">Contas Souto</h1>
-        <p className="text-texto-suave">Despesas da casa e saldo previsto.</p>
+        <h1 className="text-2xl font-semibold">{t.app.name}</h1>
+        <p className="text-ink-muted">{t.app.description}</p>
       </div>
-      {mensagem && (
-        <Alert variant="negativo" role="alert">
+      {message && (
+        <Alert variant="negative" role="alert">
           <CircleX aria-hidden />
-          <span>{mensagem}</span>
+          <span>{message}</span>
         </Alert>
       )}
-      <BotaoGoogle />
+      <GoogleButton />
     </main>
   );
 }

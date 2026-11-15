@@ -1,4 +1,4 @@
-// Cliente da API REST do Wallet (BudgetBakers), confirmado na OpenAPI 2.0.0:
+// Client for the Wallet (BudgetBakers) REST API, checked against OpenAPI 2.0.0:
 // https://rest.budgetbakers.com/wallet/openapi/ui
 //
 //   GET /v1/api/accounts?limit=&offset=&archived=false
@@ -10,73 +10,75 @@
 //   -> { records: Record[], limit, offset, nextOffset? }
 //   Record: { id, accountId, recordDate, amount: { value, currencyCode }, note,
 //             category: { id, name, parentId?, group: { id, name } } | null, transfer: {...} | null }
-//   Sem filtro de data, a API usa só os últimos 3 meses; com um limite basta para o substituir.
+//   Without a date filter the API only uses the last 3 months; one lower bound is enough to override it.
 //
-// Limite de 500 pedidos por hora (cabeçalhos X-RateLimit-*). Durante a primeira
-// sincronização a API pode responder 409 ou indicar X-Sync-In-Progress: true.
-// O token só existe no servidor (WALLET_API_TOKEN); este módulo nunca vai para o browser.
+// Limit of 500 requests per hour (X-RateLimit-* headers). During the first sync the API may
+// answer 409 or send X-Sync-In-Progress: true.
+// The token only exists on the server (WALLET_API_TOKEN); this module never reaches the browser.
+// Error messages are technical (server log and the syncs table); the screen uses sync-messages.ts.
 
 export const WALLET_BASE = "https://rest.budgetbakers.com/wallet";
-const CAMINHO_CONTAS = "/v1/api/accounts";
-const CAMINHO_MOVIMENTOS = "/v1/api/records";
-const POR_PAGINA = 200; // máximo permitido pela API
-const MAX_PAGINAS = 10;
-const MAX_PAGINAS_MOVIMENTOS = 40; // 8000 movimentos chegam para mais de um ano
+const ACCOUNTS_PATH = "/v1/api/accounts";
+const RECORDS_PATH = "/v1/api/records";
+const PAGE_SIZE = 200; // maximum allowed by the API
+const MAX_PAGES = 10;
+const MAX_RECORD_PAGES = 40; // 8000 transactions are enough for more than a year
 const TIMEOUT_MS = 15_000;
 
-export type CodigoErroWallet =
-  | "sem_token"
-  | "token_invalido"
+export type WalletErrorCode =
+  | "no_token"
+  | "invalid_token"
   | "premium"
-  | "consentimento"
-  | "proibido"
-  | "sincronizacao_inicial"
-  | "limite_pedidos"
-  | "erro_servidor"
-  | "erro_http"
-  | "sem_ligacao"
-  | "formato";
+  | "consent"
+  | "forbidden"
+  | "initial_sync"
+  | "rate_limited"
+  | "server_error"
+  | "http_error"
+  | "no_connection"
+  | "bad_format";
 
 export class WalletError extends Error {
-  readonly codigo: CodigoErroWallet;
+  readonly code: WalletErrorCode;
   readonly status?: number;
-  /** Minutos sugeridos até tentar de novo, quando a API os indica. */
-  readonly tentarDaquiMin?: number;
+  /** Minutes suggested before trying again, when the API says so. */
+  readonly retryInMinutes?: number;
 
-  constructor(mensagem: string, codigo: CodigoErroWallet, opts: { status?: number; tentarDaquiMin?: number } = {}) {
-    super(mensagem);
+  constructor(message: string, code: WalletErrorCode, opts: { status?: number; retryInMinutes?: number } = {}) {
+    super(message);
     this.name = "WalletError";
-    this.codigo = codigo;
+    this.code = code;
     this.status = opts.status;
-    this.tentarDaquiMin = opts.tentarDaquiMin;
+    this.retryInMinutes = opts.retryInMinutes;
   }
 }
 
-/** Conta tal como a app a guarda. */
-export interface ContaWallet {
+/** Account as the app stores it. */
+export interface WalletAccount {
   id: string;
-  nome: string;
-  tipo: string;
-  saldo: number;
-  moeda: string;
+  /** Empty when Wallet has no name (the screen shows "Unnamed account"). */
+  name: string;
+  type: string;
+  balance: number;
+  currency: string;
 }
 
-export interface ResultadoContas {
-  contas: ContaWallet[];
-  /** O Wallet indicou que ainda está a sincronizar; os saldos podem mudar em breve. */
-  sincronizacaoEmCurso: boolean;
-  pedidosRestantes: number | null;
+export interface AccountsResult {
+  accounts: WalletAccount[];
+  /** Wallet said it is still syncing; the balances may change soon. */
+  syncInProgress: boolean;
+  requestsLeft: number | null;
 }
 
-interface Opcoes {
+interface Options {
   token?: string;
   base?: string;
   fetch?: typeof fetch;
 }
 
-/* ---------- formato da API (só os campos que usamos) ---------- */
+/* ---------- API format (only the fields we use) ---------- */
 
-interface ApiConta {
+interface ApiAccount {
   id?: unknown;
   name?: unknown;
   accountType?: unknown;
@@ -86,91 +88,83 @@ interface ApiConta {
   balance?: { currentBalance?: unknown; currencyCode?: unknown } | null;
 }
 
-interface ApiPaginaContas {
+interface ApiAccountsPage {
   accounts?: unknown;
   nextOffset?: unknown;
 }
 
-/* ---------- pedidos ---------- */
+/* ---------- requests ---------- */
 
-function minutosDeRetryAfter(valor: string | null): number | undefined {
-  if (!valor) return undefined;
-  const seg = Number(valor);
-  if (Number.isFinite(seg)) return Math.max(1, Math.ceil(seg / 60));
-  const data = Date.parse(valor);
-  if (Number.isFinite(data)) return Math.max(1, Math.ceil((data - Date.now()) / 60_000));
+function minutesFromRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const sec = Number(value);
+  if (Number.isFinite(sec)) return Math.max(1, Math.ceil(sec / 60));
+  const date = Date.parse(value);
+  if (Number.isFinite(date)) return Math.max(1, Math.ceil((date - Date.now()) / 60_000));
   return undefined;
 }
 
-async function lerCorpo(res: Response): Promise<unknown> {
-  const texto = await res.text();
+async function readBody(res: Response): Promise<unknown> {
+  const text = await res.text();
   try {
-    return JSON.parse(texto);
+    return JSON.parse(text);
   } catch {
-    return texto;
+    return text;
   }
 }
 
-function erroDaResposta(res: Response, corpo: unknown): WalletError {
+function errorFromResponse(res: Response, body: unknown): WalletError {
   const status = res.status;
-  const codigo = typeof corpo === "object" && corpo && "code" in corpo ? String((corpo as { code: unknown }).code) : "";
+  const code = typeof body === "object" && body && "code" in body ? String((body as { code: unknown }).code) : "";
 
   if (status === 401) {
-    return new WalletError(
-      "O Wallet recusou o token. Confirma o WALLET_API_TOKEN (pode ter expirado ou sido apagado).",
-      "token_invalido",
-      { status },
-    );
+    return new WalletError("Wallet rejected the token. Check WALLET_API_TOKEN (it may have expired or been deleted).", "invalid_token", { status });
   }
   if (status === 403) {
-    if (codigo === "PREMIUM_REQUIRED") {
-      return new WalletError("A API do Wallet precisa do plano Premium ativo.", "premium", { status });
+    if (code === "PREMIUM_REQUIRED") {
+      return new WalletError("The Wallet API needs an active Premium plan.", "premium", { status });
     }
-    if (codigo === "API_CONSENT_REQUIRED" || codigo === "API_CONSENT_AND_PREMIUM_REQUIRED") {
+    if (code === "API_CONSENT_REQUIRED" || code === "API_CONSENT_AND_PREMIUM_REQUIRED") {
       return new WalletError(
-        codigo === "API_CONSENT_REQUIRED"
-          ? "Falta autorizar o acesso pela API nas definições do Wallet."
-          : "Falta autorizar o acesso pela API e ativar o plano Premium no Wallet.",
-        "consentimento",
+        code === "API_CONSENT_REQUIRED"
+          ? "API access has not been allowed in the Wallet settings."
+          : "API access has not been allowed and the Premium plan is not active in Wallet.",
+        "consent",
         { status },
       );
     }
-    return new WalletError("O token do Wallet não tem permissão para ler as contas.", "proibido", { status });
+    return new WalletError("The Wallet token is not allowed to read the accounts.", "forbidden", { status });
   }
   if (status === 409) {
     const min =
-      typeof corpo === "object" && corpo && "retry_after_minutes" in corpo
-        ? Number((corpo as { retry_after_minutes: unknown }).retry_after_minutes) || undefined
-        : minutosDeRetryAfter(res.headers.get("Retry-After"));
+      typeof body === "object" && body && "retry_after_minutes" in body
+        ? Number((body as { retry_after_minutes: unknown }).retry_after_minutes) || undefined
+        : minutesFromRetryAfter(res.headers.get("Retry-After"));
     return new WalletError(
-      `O Wallet ainda está a preparar os dados da API (primeira sincronização). Tenta daqui a ${min ?? "uns"} minuto${min === 1 ? "" : "s"}.`,
-      "sincronizacao_inicial",
-      { status, tentarDaquiMin: min },
+      `Wallet is still preparing the API data (first sync). Try again in ${min ?? "a few"} minute${min === 1 ? "" : "s"}.`,
+      "initial_sync",
+      { status, retryInMinutes: min },
     );
   }
   if (status === 429) {
-    const min = minutosDeRetryAfter(res.headers.get("Retry-After"));
+    const min = minutesFromRetryAfter(res.headers.get("Retry-After"));
     return new WalletError(
-      `Atingimos o limite de pedidos ao Wallet (500 por hora). Tenta daqui a ${min ?? "alguns"} minuto${min === 1 ? "" : "s"}.`,
-      "limite_pedidos",
-      { status, tentarDaquiMin: min },
+      `Wallet request limit reached (500 per hour). Try again in ${min ?? "a few"} minute${min === 1 ? "" : "s"}.`,
+      "rate_limited",
+      { status, retryInMinutes: min },
     );
   }
   if (status >= 500) {
-    return new WalletError(`O Wallet está com problemas (erro ${status}). Tenta mais tarde.`, "erro_servidor", { status });
+    return new WalletError(`Wallet is having problems (error ${status}). Try again later.`, "server_error", { status });
   }
-  return new WalletError(`O Wallet respondeu com erro ${status}.`, "erro_http", { status });
+  return new WalletError(`Wallet answered with error ${status}.`, "http_error", { status });
 }
 
-async function pedir(
-  caminho: string,
-  params: Record<string, string | number | boolean>,
-  opts: Opcoes,
-): Promise<{ corpo: unknown; res: Response }> {
+async function request(path: string, params: Record<string, string | number | boolean>, opts: Options): Promise<{ body: unknown; res: Response }> {
   const token = opts.token ?? process.env.WALLET_API_TOKEN;
-  if (!token) throw new WalletError("Falta configurar o WALLET_API_TOKEN no servidor.", "sem_token");
+  if (!token) throw new WalletError("WALLET_API_TOKEN is not set on the server.", "no_token");
 
-  const url = new URL((opts.base ?? WALLET_BASE).replace(/\/$/, "") + caminho);
+  const url = new URL((opts.base ?? WALLET_BASE).replace(/\/$/, "") + path);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v));
 
   let res: Response;
@@ -182,76 +176,73 @@ async function pedir(
     });
   } catch (e) {
     const timeout = e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
-    throw new WalletError(
-      timeout ? "O Wallet demorou demasiado a responder. Tenta de novo." : "Não foi possível ligar ao Wallet.",
-      "sem_ligacao",
-    );
+    throw new WalletError(timeout ? "Wallet took too long to answer." : "Couldn't connect to Wallet.", "no_connection");
   }
 
-  const corpo = await lerCorpo(res);
-  if (!res.ok) throw erroDaResposta(res, corpo);
-  return { corpo, res };
+  const body = await readBody(res);
+  if (!res.ok) throw errorFromResponse(res, body);
+  return { body, res };
 }
 
-/* ---------- contas ---------- */
+/* ---------- accounts ---------- */
 
 function num(v: unknown): number | null {
   const n = typeof v === "number" ? v : typeof v === "string" && v.trim() ? Number(v) : NaN;
   return Number.isFinite(n) ? n : null;
 }
 
-/** Contas de investimento nunca contam. */
-export function eInvestimento(a: ApiConta): boolean {
+/** Investment accounts never count. */
+export function isInvestment(a: ApiAccount): boolean {
   return a.isInvestmentAccount === true || String(a.accountType ?? "").toLowerCase() === "investment";
 }
 
-export function normalizarConta(a: ApiConta): ContaWallet {
-  const saldo = num(a.balance?.currentBalance) ?? 0;
-  const moeda = String(a.currencyCode || a.balance?.currencyCode || "EUR").toUpperCase();
+export function normalizeAccount(a: ApiAccount): WalletAccount {
+  const balance = num(a.balance?.currentBalance) ?? 0;
+  const currency = String(a.currencyCode || a.balance?.currencyCode || "EUR").toUpperCase();
   return {
     id: String(a.id),
-    nome: String(a.name ?? "").trim() || "Conta sem nome",
-    tipo: String(a.accountType ?? ""),
-    saldo: Math.round(saldo * 100) / 100,
-    moeda,
+    name: String(a.name ?? "").trim(),
+    type: String(a.accountType ?? ""),
+    balance: Math.round(balance * 100) / 100,
+    currency,
   };
 }
 
 /**
- * Lê todas as contas ativas do Wallet, já sem arquivadas e sem investimentos.
- * O filtro archived=false é pedido à API e repetido aqui por segurança.
+ * Reads every active Wallet account, without archived and investment accounts.
+ * The archived=false filter is asked of the API and repeated here to be safe.
  */
-export async function lerContas(opts: Opcoes = {}): Promise<ResultadoContas> {
-  const brutas: ApiConta[] = [];
+export async function fetchAccounts(opts: Options = {}): Promise<AccountsResult> {
+  const raw: ApiAccount[] = [];
   let offset = 0;
-  let sincronizacaoEmCurso = false;
-  let pedidosRestantes: number | null = null;
+  let syncInProgress = false;
+  let requestsLeft: number | null = null;
 
-  for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
-    const { corpo, res } = await pedir(CAMINHO_CONTAS, { limit: POR_PAGINA, offset, archived: false }, opts);
-    const p = corpo as ApiPaginaContas;
-    if (typeof corpo !== "object" || corpo === null || !Array.isArray(p.accounts)) {
-      throw new WalletError("A resposta do Wallet não tem o formato esperado (falta a lista de contas).", "formato");
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const { body, res } = await request(ACCOUNTS_PATH, { limit: PAGE_SIZE, offset, archived: false }, opts);
+    const p = body as ApiAccountsPage;
+    if (typeof body !== "object" || body === null || !Array.isArray(p.accounts)) {
+      throw new WalletError("The Wallet response doesn't have the expected format (the accounts list is missing).", "bad_format");
     }
-    if (res.headers.get("X-Sync-In-Progress") === "true") sincronizacaoEmCurso = true;
-    pedidosRestantes = num(res.headers.get("X-RateLimit-Remaining"));
+    if (res.headers.get("X-Sync-In-Progress") === "true") syncInProgress = true;
+    requestsLeft = num(res.headers.get("X-RateLimit-Remaining"));
 
     for (const a of p.accounts as unknown[]) {
-      if (typeof a === "object" && a !== null && "id" in a) brutas.push(a as ApiConta);
+      if (typeof a === "object" && a !== null && "id" in a) raw.push(a as ApiAccount);
     }
 
-    const proximo = num(p.nextOffset);
-    if (proximo == null || p.accounts.length === 0 || proximo <= offset) break;
-    offset = proximo;
+    const next = num(p.nextOffset);
+    if (next == null || p.accounts.length === 0 || next <= offset) break;
+    offset = next;
   }
 
-  const contas = brutas.filter((a) => a.archived !== true && !eInvestimento(a)).map(normalizarConta);
-  return { contas, sincronizacaoEmCurso, pedidosRestantes };
+  const accounts = raw.filter((a) => a.archived !== true && !isInvestment(a)).map(normalizeAccount);
+  return { accounts, syncInProgress, requestsLeft };
 }
 
-/* ---------- movimentos ---------- */
+/* ---------- transactions ---------- */
 
-interface ApiMovimento {
+interface ApiRecord {
   id?: unknown;
   accountId?: unknown;
   recordDate?: unknown;
@@ -261,65 +252,61 @@ interface ApiMovimento {
   transfer?: unknown;
 }
 
-/** Movimento tal como a app o guarda (sem o mês, que é calculado na hora de Lisboa). */
-export interface MovimentoWallet {
+/** Transaction as the app stores it (without the month, which is worked out in Lisbon time). */
+export interface WalletTransaction {
   id: string;
-  contaId: string;
-  data: Date;
-  valor: number;
-  moeda: string;
-  categoriaId: string | null;
-  categoriaPaiId: string | null;
-  categoriaNome: string;
-  grupo: string;
-  nota: string;
-  transferencia: boolean;
+  accountId: string;
+  date: Date;
+  amount: number;
+  currency: string;
+  categoryId: string | null;
+  parentCategoryId: string | null;
+  categoryName: string;
+  categoryGroup: string;
+  note: string;
+  isTransfer: boolean;
 }
 
-const texto = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+const text = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
-/** null quando falta o essencial (id, conta, data ou valor). */
-export function normalizarMovimento(r: ApiMovimento): MovimentoWallet | null {
-  const valor = num(r.amount?.value);
-  const data = typeof r.recordDate === "string" ? new Date(r.recordDate) : null;
-  if (r.id == null || r.accountId == null || valor == null || !data || Number.isNaN(data.getTime())) return null;
+/** null when the essentials are missing (id, account, date or amount). */
+export function normalizeTransaction(r: ApiRecord): WalletTransaction | null {
+  const amount = num(r.amount?.value);
+  const date = typeof r.recordDate === "string" ? new Date(r.recordDate) : null;
+  if (r.id == null || r.accountId == null || amount == null || !date || Number.isNaN(date.getTime())) return null;
   const c = r.category ?? null;
   return {
     id: String(r.id),
-    contaId: String(r.accountId),
-    data,
-    valor: Math.round(valor * 100) / 100,
-    moeda: String(r.amount?.currencyCode || "EUR").toUpperCase(),
-    categoriaId: c?.id != null ? String(c.id) : null,
-    categoriaPaiId: c?.parentId != null && c.parentId !== "" ? String(c.parentId) : null,
-    categoriaNome: texto(c?.name, 100),
-    grupo: texto(c?.group?.id, 50),
-    nota: texto(r.note),
-    transferencia: r.transfer != null,
+    accountId: String(r.accountId),
+    date,
+    amount: Math.round(amount * 100) / 100,
+    currency: String(r.amount?.currencyCode || "EUR").toUpperCase(),
+    categoryId: c?.id != null ? String(c.id) : null,
+    parentCategoryId: c?.parentId != null && c.parentId !== "" ? String(c.parentId) : null,
+    categoryName: text(c?.name, 100),
+    categoryGroup: text(c?.group?.id, 50),
+    note: text(r.note),
+    isTransfer: r.transfer != null,
   };
 }
 
-/** Lê todos os movimentos com data igual ou posterior a `desde`, de todas as contas. */
-export async function lerMovimentos(desde: Date, opts: Opcoes = {}): Promise<MovimentoWallet[]> {
-  const lista: MovimentoWallet[] = [];
+/** Reads every transaction dated `since` or later, from all accounts. */
+export async function fetchTransactions(since: Date, opts: Options = {}): Promise<WalletTransaction[]> {
+  const list: WalletTransaction[] = [];
   let offset = 0;
-  for (let pagina = 0; pagina < MAX_PAGINAS_MOVIMENTOS; pagina++) {
-    const { corpo } = await pedir(
-      CAMINHO_MOVIMENTOS,
-      { recordDate: `gte.${desde.toISOString()}`, limit: POR_PAGINA, offset },
-      opts,
-    );
-    const p = corpo as { records?: unknown; nextOffset?: unknown };
-    if (typeof corpo !== "object" || corpo === null || !Array.isArray(p.records)) {
-      throw new WalletError("A resposta do Wallet não tem o formato esperado (falta a lista de movimentos).", "formato");
+  for (let page = 0; page < MAX_RECORD_PAGES; page++) {
+    const { body } = await request(RECORDS_PATH, { recordDate: `gte.${since.toISOString()}`, limit: PAGE_SIZE, offset }, opts);
+    const p = body as { records?: unknown; nextOffset?: unknown };
+    if (typeof body !== "object" || body === null || !Array.isArray(p.records)) {
+      throw new WalletError("The Wallet response doesn't have the expected format (the records list is missing).", "bad_format");
     }
     for (const r of p.records as unknown[]) {
-      const m = typeof r === "object" && r !== null ? normalizarMovimento(r as ApiMovimento) : null;
-      if (m) lista.push(m);
+      const t = typeof r === "object" && r !== null ? normalizeTransaction(r as ApiRecord) : null;
+      if (t) list.push(t);
     }
-    const proximo = num(p.nextOffset);
-    if (proximo == null || p.records.length === 0 || proximo <= offset) return lista;
-    offset = proximo;
+    const next = num(p.nextOffset);
+    if (next == null || p.records.length === 0 || next <= offset) return list;
+    offset = next;
   }
-  throw new WalletError("Há demasiados movimentos para ler de uma vez.", "formato");
+  throw new WalletError("Too many transactions to read at once.", "bad_format");
 }

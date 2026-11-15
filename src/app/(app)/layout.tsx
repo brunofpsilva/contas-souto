@@ -1,26 +1,26 @@
 import { cookies } from "next/headers";
-import { ProvedorAvisos } from "@/components/avisos";
-import { Cabecalho, NavegacaoFundo, TituloDesktop } from "@/components/navegacao";
-import { ProvedorSaldoOculto } from "@/components/saldo-oculto";
-import { exigirUtilizador } from "@/lib/auth";
-import { COOKIE_SALDO_OCULTO } from "@/lib/privacidade";
-import { LADOS } from "@/lib/rotas";
+import { HiddenBalancesProvider } from "@/components/hidden-balances";
+import { BottomNav, DesktopTitle, Header } from "@/components/navigation";
+import { ToastProvider } from "@/components/toasts";
+import { requireUser } from "@/lib/auth";
+import { HIDE_BALANCES_COOKIE } from "@/lib/privacy";
+import { SIDES } from "@/lib/routes";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const [, biscoitos] = await Promise.all([exigirUtilizador(), cookies()]);
+  const [, jar] = await Promise.all([requireUser(), cookies()]);
   return (
-    <ProvedorSaldoOculto inicial={biscoitos.get(COOKIE_SALDO_OCULTO)?.value === "1"}>
-      <ProvedorAvisos>
-        <Cabecalho />
-        {/* No telemóvel, o fundo deixa espaço para a barra de navegação fixa. */}
+    <HiddenBalancesProvider initial={jar.get(HIDE_BALANCES_COOKIE)?.value === "1"}>
+      <ToastProvider>
+        <Header />
+        {/* On phones, the bottom leaves room for the fixed navigation bar. */}
         <main
-          className={`mx-auto grid w-full max-w-5xl content-start gap-6 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pt-6 md:pb-16 ${LADOS}`}
+          className={`mx-auto grid w-full max-w-5xl content-start gap-6 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pt-6 md:pb-16 ${SIDES}`}
         >
-          <TituloDesktop />
+          <DesktopTitle />
           {children}
         </main>
-        <NavegacaoFundo />
-      </ProvedorAvisos>
-    </ProvedorSaldoOculto>
+        <BottomNav />
+      </ToastProvider>
+    </HiddenBalancesProvider>
   );
 }

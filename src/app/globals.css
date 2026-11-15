@@ -3,61 +3,61 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Tokens semânticos (docs/redesenho-ux.md, secção 8). Cada um tem valor no tema claro e no
- * escuro. O código usa os nomes (bg-fundo, text-texto-suave, text-positivo…) e nunca cores
- * fixas. Não usar a variante `dark:`: os tokens já mudam com o tema.
+ * Semantic tokens (docs/redesenho-ux.md, section 8). Each one has a value in the light theme and
+ * one in the dark theme. The code uses the names (bg-canvas, text-ink-muted, text-positive…) and
+ * never fixed colours. Don't use the `dark:` variant: the tokens already change with the theme.
  */
 @theme inline {
-  --color-fundo: var(--fundo);
-  --color-superficie: var(--superficie);
-  --color-superficie-suave: var(--superficie-suave);
-  --color-texto: var(--texto);
-  --color-texto-suave: var(--texto-suave);
-  --color-borda: var(--borda);
-  --color-borda-forte: var(--borda-forte);
-  --color-primaria: var(--primaria);
-  --color-sobre-primaria: var(--sobre-primaria);
-  --color-primaria-suave: var(--primaria-suave);
-  --color-positivo: var(--positivo);
-  --color-positivo-suave: var(--positivo-suave);
-  --color-aviso: var(--aviso);
-  --color-aviso-suave: var(--aviso-suave);
-  --color-negativo: var(--negativo);
-  --color-negativo-suave: var(--negativo-suave);
-  --color-grafico-pago: var(--grafico-pago);
-  --color-grafico-por-pagar: var(--grafico-por-pagar);
-  /* Véu por trás dos diálogos. */
-  --color-veu: var(--veu);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-on-brand: var(--on-brand);
+  --color-brand-muted: var(--brand-muted);
+  --color-positive: var(--positive);
+  --color-positive-muted: var(--positive-muted);
+  --color-warning: var(--warning);
+  --color-warning-muted: var(--warning-muted);
+  --color-negative: var(--negative);
+  --color-negative-muted: var(--negative-muted);
+  --color-chart-paid: var(--chart-paid);
+  --color-chart-unpaid: var(--chart-unpaid);
+  /* Veil behind dialogs. */
+  --color-scrim: var(--scrim);
 
-  /* Os mesmos valores com os nomes que os componentes shadcn (components/ui) esperam. */
-  --color-background: var(--fundo);
-  --color-foreground: var(--texto);
-  --color-card: var(--superficie);
-  --color-card-foreground: var(--texto);
-  --color-popover: var(--superficie);
-  --color-popover-foreground: var(--texto);
-  --color-primary: var(--primaria);
-  --color-primary-foreground: var(--sobre-primaria);
-  --color-secondary: var(--superficie-suave);
-  --color-secondary-foreground: var(--texto);
-  --color-muted: var(--superficie-suave);
-  --color-muted-foreground: var(--texto-suave);
-  --color-accent: var(--primaria-suave);
-  --color-accent-foreground: var(--primaria);
-  --color-destructive: var(--negativo);
-  --color-border: var(--borda);
-  --color-input: var(--borda-forte);
-  --color-ring: var(--primaria);
+  /* The same values with the names the shadcn components (components/ui) expect. */
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--brand);
+  --color-primary-foreground: var(--on-brand);
+  --color-secondary: var(--surface-muted);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--surface-muted);
+  --color-muted-foreground: var(--ink-muted);
+  --color-accent: var(--brand-muted);
+  --color-accent-foreground: var(--brand);
+  --color-destructive: var(--negative);
+  --color-border: var(--line);
+  --color-input: var(--line-strong);
+  --color-ring: var(--brand);
 
-  /* Uma família para tudo; os números alinham com tabular-nums. */
+  /* One family for everything; numbers line up with tabular-nums. */
   --font-sans: var(--font-sans);
   --font-heading: var(--font-sans);
 
-  /* O número grande do Início (os outros tamanhos são os do Tailwind: xs, sm, base, lg, 2xl). */
-  --text-numero: 2.5rem;
-  --text-numero--line-height: 2.75rem;
+  /* The big number on Home (the other sizes are Tailwind's: xs, sm, base, lg, 2xl). */
+  --text-figure: 2.5rem;
+  --text-figure--line-height: 2.75rem;
 
-  /* Três raios: 6 px (caixas), 10 px (botões e campos), 16 px (cartões e diálogos). */
+  /* Three radii: 6 px (boxes), 10 px (buttons and fields), 16 px (cards and dialogs). */
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
   --radius-lg: 0.625rem;
@@ -66,88 +66,88 @@
   --radius-3xl: 1rem;
   --radius-4xl: 1rem;
 
-  /* Duas sombras: a do segmento escolhido e a do que flutua (diálogos, ajudas, avisos). */
-  --shadow-segmento: 0 1px 2px rgb(0 0 0 / 0.08);
-  --shadow-flutuante: var(--sombra-flutuante);
+  /* Two shadows: the selected segment's and that of floating things (dialogs, help, toasts). */
+  --shadow-segment: 0 1px 2px rgb(0 0 0 / 0.08);
+  --shadow-floating: var(--floating-shadow);
 }
 
-/* Tema claro (paleta "Areia"). */
+/* Light theme ("Sand" palette). */
 :root {
-  --fundo: #f6f4f0;
-  --superficie: #ffffff;
-  --superficie-suave: #ebe7e0;
-  --texto: #1f1c18;
-  --texto-suave: #625b52;
-  --borda: #ddd8cf;
-  --borda-forte: #8a8276;
-  --primaria: #1d5873;
-  --sobre-primaria: #ffffff;
-  --primaria-suave: #d9e8ef;
-  --positivo: #1f7245;
-  --positivo-suave: #dcefe2;
-  --aviso: #855600;
-  --aviso-suave: #f8eacb;
-  --negativo: #b0342a;
-  --negativo-suave: #f9e0dd;
-  --grafico-pago: #16475f;
-  --grafico-por-pagar: #488ba8;
-  --sombra-flutuante: 0 8px 24px rgb(0 0 0 / 0.12);
-  --veu: rgb(31 28 24 / 0.45);
+  --canvas: #f6f4f0;
+  --surface: #ffffff;
+  --surface-muted: #ebe7e0;
+  --ink: #1f1c18;
+  --ink-muted: #625b52;
+  --line: #ddd8cf;
+  --line-strong: #8a8276;
+  --brand: #1d5873;
+  --on-brand: #ffffff;
+  --brand-muted: #d9e8ef;
+  --positive: #1f7245;
+  --positive-muted: #dcefe2;
+  --warning: #855600;
+  --warning-muted: #f8eacb;
+  --negative: #b0342a;
+  --negative-muted: #f9e0dd;
+  --chart-paid: #16475f;
+  --chart-unpaid: #488ba8;
+  --floating-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  --scrim: rgb(31 28 24 / 0.45);
   color-scheme: light;
 }
 
 /*
- * Tema escuro, desenhado de raiz. Aparece duas vezes com os mesmos valores (test/tema.test.ts
- * confirma): quando o sistema está em escuro e não se escolheu "Claro", e quando se escolheu
- * "Escuro" nas Definições (data-tema vem do cookie, posto no <html> pelo servidor).
+ * Dark theme, designed from scratch. It appears twice with the same values (test/theme.test.ts
+ * checks): when the system is dark and "Light" wasn't chosen, and when "Dark" was chosen in
+ * Settings (data-theme comes from the cookie, set on <html> by the server).
  */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-tema="claro"]) {
-    --fundo: #141310;
-    --superficie: #1e1c19;
-    --superficie-suave: #2a2723;
-    --texto: #f0ece6;
-    --texto-suave: #aca499;
-    --borda: #36322d;
-    --borda-forte: #787064;
-    --primaria: #7cc4e0;
-    --sobre-primaria: #0b2530;
-    --primaria-suave: #1b3643;
-    --positivo: #62c78f;
-    --positivo-suave: #173326;
-    --aviso: #e5ad4a;
-    --aviso-suave: #382b12;
-    --negativo: #f08a7e;
-    --negativo-suave: #40201c;
-    --grafico-pago: #86cbe6;
-    --grafico-por-pagar: #40829d;
-    --sombra-flutuante: 0 8px 24px rgb(0 0 0 / 0.5);
-    --veu: rgb(0 0 0 / 0.6);
+  :root:not([data-theme="light"]) {
+    --canvas: #141310;
+    --surface: #1e1c19;
+    --surface-muted: #2a2723;
+    --ink: #f0ece6;
+    --ink-muted: #aca499;
+    --line: #36322d;
+    --line-strong: #787064;
+    --brand: #7cc4e0;
+    --on-brand: #0b2530;
+    --brand-muted: #1b3643;
+    --positive: #62c78f;
+    --positive-muted: #173326;
+    --warning: #e5ad4a;
+    --warning-muted: #382b12;
+    --negative: #f08a7e;
+    --negative-muted: #40201c;
+    --chart-paid: #86cbe6;
+    --chart-unpaid: #40829d;
+    --floating-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+    --scrim: rgb(0 0 0 / 0.6);
     color-scheme: dark;
   }
 }
 
-:root[data-tema="escuro"] {
-  --fundo: #141310;
-  --superficie: #1e1c19;
-  --superficie-suave: #2a2723;
-  --texto: #f0ece6;
-  --texto-suave: #aca499;
-  --borda: #36322d;
-  --borda-forte: #787064;
-  --primaria: #7cc4e0;
-  --sobre-primaria: #0b2530;
-  --primaria-suave: #1b3643;
-  --positivo: #62c78f;
-  --positivo-suave: #173326;
-  --aviso: #e5ad4a;
-  --aviso-suave: #382b12;
-  --negativo: #f08a7e;
-  --negativo-suave: #40201c;
-  --grafico-pago: #86cbe6;
-  --grafico-por-pagar: #40829d;
-  --sombra-flutuante: 0 8px 24px rgb(0 0 0 / 0.5);
-  --veu: rgb(0 0 0 / 0.6);
+:root[data-theme="dark"] {
+  --canvas: #141310;
+  --surface: #1e1c19;
+  --surface-muted: #2a2723;
+  --ink: #f0ece6;
+  --ink-muted: #aca499;
+  --line: #36322d;
+  --line-strong: #787064;
+  --brand: #7cc4e0;
+  --on-brand: #0b2530;
+  --brand-muted: #1b3643;
+  --positive: #62c78f;
+  --positive-muted: #173326;
+  --warning: #e5ad4a;
+  --warning-muted: #382b12;
+  --negative: #f08a7e;
+  --negative-muted: #40201c;
+  --chart-paid: #86cbe6;
+  --chart-unpaid: #40829d;
+  --floating-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  --scrim: rgb(0 0 0 / 0.6);
   color-scheme: dark;
 }
 
@@ -160,15 +160,15 @@
   }
   html {
     @apply font-sans;
-    /* O iOS não aumenta o texto sozinho ao rodar o ecrã. */
+    /* iOS doesn't enlarge the text on its own when the screen rotates. */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    /* Âncoras e campos focados não ficam escondidos atrás do cabeçalho fixo. */
+    /* Anchors and focused fields don't end up hidden behind the fixed header. */
     scroll-padding-top: 4.5rem;
-    /* Sem o flash cinzento ao tocar em ligações e botões. */
+    /* No grey flash when tapping links and buttons. */
     -webkit-tap-highlight-color: transparent;
   }
-  /* Toque sem esperar pelo duplo toque de zoom. */
+  /* Tap without waiting for the double-tap zoom. */
   a,
   button,
   input,
@@ -179,7 +179,7 @@
   [role="button"] {
     touch-action: manipulation;
   }
-  /* Sem movimento para quem o pediu ao sistema. */
+  /* No motion for those who asked the system for it. */
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,

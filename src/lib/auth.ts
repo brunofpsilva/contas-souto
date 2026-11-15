@@ -2,7 +2,7 @@ import { getServerSession, type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/db";
-import { emailAutorizado } from "./emails";
+import { isAllowedEmail } from "./emails";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -17,35 +17,35 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ profile, user }) {
       const email = (profile?.email ?? user.email ?? "").toLowerCase();
-      const verificado = (profile as { email_verified?: boolean } | undefined)?.email_verified;
-      if (!email || verificado === false || !emailAutorizado(email)) return false;
+      const verified = (profile as { email_verified?: boolean } | undefined)?.email_verified;
+      if (!email || verified === false || !isAllowedEmail(email)) return false;
 
-      const nome = (profile?.name ?? user.name ?? email.split("@")[0]).trim();
+      const name = (profile?.name ?? user.name ?? email.split("@")[0]).trim();
       await db
-        .insert(schema.utilizadores)
-        .values({ email, nome })
-        .onConflictDoUpdate({ target: schema.utilizadores.email, set: { nome, ultimoLogin: new Date() } });
+        .insert(schema.users)
+        .values({ email, name })
+        .onConflictDoUpdate({ target: schema.users.email, set: { name, lastLoginAt: new Date() } });
       return true;
     },
   },
 };
 
-export interface Utilizador {
+export interface SessionUser {
   email: string;
-  nome: string;
+  name: string;
 }
 
-/** Utilizador da sessão, ou null. Volta a verificar a lista de emails a cada pedido. */
-export async function utilizadorAtual(): Promise<Utilizador | null> {
+/** User of the session, or null. Checks the email list again on every request. */
+export async function currentUser(): Promise<SessionUser | null> {
   const s = await getServerSession(authOptions);
   const email = s?.user?.email?.toLowerCase();
-  if (!email || !emailAutorizado(email)) return null;
-  return { email, nome: s?.user?.name ?? email };
+  if (!email || !isAllowedEmail(email)) return null;
+  return { email, name: s?.user?.name ?? email };
 }
 
-/** Para páginas e server actions: sem sessão válida, vai para o login. */
-export async function exigirUtilizador(): Promise<Utilizador> {
-  const u = await utilizadorAtual();
+/** For pages and server actions: without a valid session, go to the login page. */
+export async function requireUser(): Promise<SessionUser> {
+  const u = await currentUser();
   if (!u) redirect("/login");
   return u;
 }

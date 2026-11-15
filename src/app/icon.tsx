@@ -1,13 +1,13 @@
 import { ImageResponse } from "next/og";
-import { DesenhoIcone } from "@/lib/icone";
+import { AppIcon } from "@/lib/app-icon";
 
-const TAMANHOS = [32, 192, 512];
+const SIZES = [32, 192, 512];
 
 export function generateImageMetadata() {
-  return TAMANHOS.map((t) => ({ id: String(t), size: { width: t, height: t }, contentType: "image/png" }));
+  return SIZES.map((s) => ({ id: String(s), size: { width: s, height: s }, contentType: "image/png" }));
 }
 
 export default async function Icon({ id }: { id: Promise<string | number> }) {
-  const t = Number(await id);
-  return new ImageResponse(<DesenhoIcone tamanho={t} />, { width: t, height: t });
+  const size = Number(await id);
+  return new ImageResponse(<AppIcon size={size} />, { width: size, height: size });
 }

@@ -1,31 +1,31 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
-import { sslPara } from "./ssl.mjs";
+import { sslFor } from "./ssl.mjs";
 
-function criar() {
+function create() {
   const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("Falta configurar DATABASE_URL.");
-  const cliente = postgres(url, { max: 5, idle_timeout: 30, ssl: sslPara(url) });
-  return drizzle(cliente, { schema, casing: "snake_case" });
+  if (!url) throw new Error("DATABASE_URL is not set.");
+  const client = postgres(url, { max: 5, idle_timeout: 30, ssl: sslFor(url) });
+  return drizzle(client, { schema, casing: "snake_case" });
 }
 
-type BaseDeDados = ReturnType<typeof criar>;
+type Database = ReturnType<typeof create>;
 
-// Uma só ligação por processo, criada no primeiro uso (o build não precisa de DATABASE_URL).
-// Em desenvolvimento o hot reload reaproveita a mesma.
-const global = globalThis as unknown as { contasSoutoDb?: BaseDeDados };
+// One connection per process, created on first use (the build doesn't need DATABASE_URL).
+// In development, hot reload reuses the same one.
+const global = globalThis as unknown as { contasSoutoDb?: Database };
 
-function obter(): BaseDeDados {
-  global.contasSoutoDb ??= criar();
+function get(): Database {
+  global.contasSoutoDb ??= create();
   return global.contasSoutoDb;
 }
 
-export const db = new Proxy({} as BaseDeDados, {
-  get(_alvo, prop) {
-    const real = obter();
-    const valor = Reflect.get(real, prop, real);
-    return typeof valor === "function" ? valor.bind(real) : valor;
+export const db = new Proxy({} as Database, {
+  get(_target, prop) {
+    const real = get();
+    const value = Reflect.get(real, prop, real);
+    return typeof value === "function" ? value.bind(real) : value;
   },
 });
 

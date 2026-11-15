@@ -1,21 +1,24 @@
 import type { MetadataRoute } from "next";
-import { CORES } from "@/lib/tema";
+import { DEFAULT_LOCALE, messagesFor } from "@/i18n/config";
+import { COLORS } from "@/lib/theme";
 
-// O manifest só aceita uma cor de cada: ficam as do tema claro. Com a app aberta, a barra
-// do browser segue o tema (generateViewport em layout.tsx).
+// The manifest only takes one colour of each kind: the light theme's. With the app open, the
+// browser bar follows the theme (generateViewport in layout.tsx). It is read once when the app
+// is installed, so it uses the default language.
 export default function manifest(): MetadataRoute.Manifest {
+  const t = messagesFor(DEFAULT_LOCALE);
   return {
     id: "/",
-    name: "Contas Souto",
-    short_name: "Contas Souto",
-    description: "Despesas da casa e saldo previsto.",
-    lang: "pt-PT",
+    name: t.app.name,
+    short_name: t.app.name,
+    description: t.app.description,
+    lang: t.intl,
     start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: CORES.claro.fundo,
-    theme_color: CORES.claro.fundo,
+    background_color: COLORS.light.canvas,
+    theme_color: COLORS.light.canvas,
     icons: [
       { src: "/icon/192", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icon/512", sizes: "512x512", type: "image/png", purpose: "any" },

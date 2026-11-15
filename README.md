@@ -4,16 +4,17 @@ A small private web app that forecasts whether a household will have enough mone
 
 It reads account balances and transactions from [Wallet by BudgetBakers](https://budgetbakers.com), adds the planned house expenses, and projects the balance month by month up to the key dates (the deed signing and the end of construction).
 
-> This is a personal project built for one household. The UI is in Portuguese and some rules (salary cycles, Wallet category ids) are specific to how we use Wallet. Feel free to read or fork it, but expect to adapt it.
+> This is a personal project built for one household. The UI is in Portuguese or English (chosen in Settings) and some rules (salary cycles, Wallet category ids) are specific to how we use Wallet. Feel free to read or fork it, but expect to adapt it.
 
 ## Features
 
-- **Home** (Início): one answer at the top: is there enough money, and how much is left after the last key date. Below it, today's balance, what is still to pay and the next payments.
-- **Expenses** (Despesas): house expenses, to pay or paid, each tied to a month, to the deed date or to the end of construction, and optionally to a room.
-- **Forecast** (Previsão): projected balance month by month, with a chart, the key dates, a minimum-reserve warning and how each figure is estimated. Monthly spending can be adjusted by hand.
-- **Budget** (Orçamento): rooms with a spending limit, compared against what was paid and is still to pay (for comparison only, not part of the forecast), plus totals by category.
-- **Settings** (Definições): key dates, minimum reserve, which Wallet accounts count, a manual balance update, theme (system, light or dark) and sign out.
+- **Home**: one answer at the top: is there enough money, and how much is left after the last key date. Below it, today's balance, what is still to pay and the next payments.
+- **Expenses**: house expenses, to pay or paid, each tied to a month, to the deed date or to the end of construction, and optionally to a room.
+- **Forecast**: projected balance month by month, with a chart, the key dates, a minimum-reserve warning and how each figure is estimated. Monthly spending can be adjusted by hand.
+- **Budget**: rooms with a spending limit, compared against what was paid and is still to pay (for comparison only, not part of the forecast), plus totals by category.
+- **Settings**: key dates, minimum reserve, which Wallet accounts count, a manual balance update, theme (system, light or dark), language (Portuguese or English) and sign out.
 - Income and monthly spending are estimated from the last 12 months of real Wallet transactions.
+- Every text is in `src/i18n/` (`pt.ts` and `en.ts`, with the same keys); dates and amounts follow the language too.
 - Google login restricted to an email allow-list; installable as a PWA, designed for phones first.
 
 ## Stack
@@ -54,7 +55,7 @@ See `.env.example`.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client (redirect URI: `<url>/api/auth/callback/google`) |
 | `ALLOWED_EMAILS` | comma-separated emails allowed to sign in |
 | `WALLET_API_TOKEN` | Wallet API token (Premium plan), server-side only |
-| `SALARIOS_FIXOS` | optional fixed monthly salaries, `Name:amount,Name:amount`; empty means salaries are estimated from transactions |
+| `FIXED_SALARIES` | optional fixed monthly salaries, `Name:amount,Name:amount`; empty means salaries are estimated from transactions (the old name `SALARIOS_FIXOS` still works) |
 | `CRON_SECRET` | shared secret for `POST /api/cron/sync` |
 | `APP_URL` | app URL, used only by the cron and `npm run cron:sync` |
 
@@ -69,7 +70,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 1. Create a Postgres database and set `DATABASE_URL`.
 2. Import the repo in Vercel and add the environment variables to Production. Production builds run the migrations before `next build` (`scripts/build.mjs`); preview builds never touch the database.
 3. Add the production URL to the Google OAuth client.
-4. In GitHub, add the `APP_URL` and `CRON_SECRET` repository secrets. The workflow in `.github/workflows/sincronizar-wallet.yml` calls `POST /api/cron/sync` every hour.
+4. In GitHub, add the `APP_URL` and `CRON_SECRET` repository secrets. The workflow in `.github/workflows/sync-wallet.yml` calls `POST /api/cron/sync` every hour.
 
 ## Project structure
 
@@ -79,6 +80,7 @@ src/
   actions/      server actions
   components/   UI (ui/ = shadcn)
   db/           Drizzle schema and connection
+  i18n/         texts in Portuguese and English, and the language cookie
   lib/          forecast, key dates, salary cycles, Wallet client, validation, formats and labels
   proxy.ts      redirects to /login without an authorised session
 docs/           UX/UI redesign notes (glossary, writing guide, design tokens)
@@ -87,8 +89,10 @@ scripts/        build, migrate and cron helpers
 test/           Vitest tests
 ```
 
-The forecast logic lives in `src/lib/previsao.ts` and `src/lib/tendencia.ts`; the Wallet-specific rules are in `src/lib/tendencia-regras.ts`. What each screen shows from those results is in `src/lib/inicio.ts` and `src/lib/vista-previsao.ts`.
+The forecast logic lives in `src/lib/forecast.ts` and `src/lib/trend.ts`; the Wallet-specific rules are in `src/lib/trend-rules.ts`. What each screen shows from those results is in `src/lib/home.ts` and `src/lib/forecast-view.ts`.
+
+Migrations `0000`–`0007` were written when the code used Portuguese names; `0008_english_names.sql` renames everything in the database to the names used today. The old Portuguese addresses (`/despesas`, `/previsao`…) redirect to the new ones (`next.config.ts`).
 
 ## Design
 
-Colours are semantic tokens defined once in `src/app/globals.css`, with a light and a dark value each (`fundo`, `superficie`, `texto`, `primaria`, `positivo`, `aviso`, `negativo`…). `test/tema.test.ts` checks that every text/background pair meets WCAG AA in both themes. The glossary (one term per concept), the writing guide and the tokens are documented in `docs/redesenho-ux.md`.
+Colours are semantic tokens defined once in `src/app/globals.css`, with a light and a dark value each (`canvas`, `surface`, `ink`, `brand`, `positive`, `warning`, `negative`…). `test/theme.test.ts` checks that every text/background pair meets WCAG AA in both themes. The glossary (one term per concept), the writing guide and the tokens are documented in `docs/redesenho-ux.md` (in Portuguese, written before the code moved to English names).

@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Página não encontrada" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).notFound.title };
+}
 
-export default function NaoEncontrada() {
+export default async function NotFound() {
+  const t = await getT();
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-4 px-4 pt-[max(4rem,env(safe-area-inset-top))] pb-[max(4rem,env(safe-area-inset-bottom))]">
-      <h1 className="text-2xl font-semibold">Página não encontrada.</h1>
+      <h1 className="text-2xl font-semibold">{t.notFound.heading}</h1>
       <Button asChild className="w-fit">
-        <Link href="/">Ir para o Início</Link>
+        <Link href="/">{t.notFound.goHome}</Link>
       </Button>
     </main>
   );

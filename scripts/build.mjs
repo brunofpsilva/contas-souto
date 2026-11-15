@@ -1,17 +1,17 @@
-// Build da app. Na Vercel, em produção, aplica primeiro as migrações da base de dados.
-// Builds locais e de pré-visualização (preview) nunca mexem na base de dados.
+// App build. On Vercel, in production, it applies the database migrations first.
+// Local and preview builds never touch the database.
 import { spawnSync } from "node:child_process";
 
-function correr(comando) {
-  console.log(`> ${comando}`);
-  const r = spawnSync(comando, { stdio: "inherit", shell: true });
+function run(command) {
+  console.log(`> ${command}`);
+  const r = spawnSync(command, { stdio: "inherit", shell: true });
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 
 if (process.env.VERCEL_ENV === "production") {
-  correr("node scripts/migrar.mjs");
+  run("node scripts/migrate.mjs");
 } else if (process.env.VERCEL_ENV) {
-  console.log(`Ambiente ${process.env.VERCEL_ENV}: sem migrações.`);
+  console.log(`${process.env.VERCEL_ENV} environment: no migrations.`);
 }
 
-correr("next build");
+run("next build");

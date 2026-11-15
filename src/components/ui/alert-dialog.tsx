@@ -12,7 +12,7 @@ function AlertDialogTrigger(props: React.ComponentProps<typeof AlertDialogPrimit
   return <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
 }
 
-/** No telemóvel fica em baixo, ao alcance do polegar; a partir de sm, ao centro. */
+/** On phones it sits at the bottom, within thumb reach; from sm up, in the centre. */
 function AlertDialogContent({
   className,
   ...props
@@ -21,12 +21,12 @@ function AlertDialogContent({
     <AlertDialogPrimitive.Portal>
       <AlertDialogPrimitive.Overlay
         data-slot="alert-dialog-overlay"
-        className="fixed inset-0 z-50 bg-veu data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
+        className="fixed inset-0 z-50 bg-scrim data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
       />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
         className={cn(
-          "fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 mx-auto grid max-w-sm gap-4 rounded-xl border bg-popover p-4 text-popover-foreground shadow-flutuante outline-none sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+          "fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 mx-auto grid max-w-sm gap-4 rounded-xl border bg-popover p-4 text-popover-foreground shadow-floating outline-none sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
           className
         )}
         {...props}

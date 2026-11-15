@@ -13,7 +13,7 @@ function Checkbox({
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        // A caixa tem 20 px; o "after" alarga a zona de toque para 44 px.
+        // The box is 20 px; the "after" widens the touch area to 44 px.
         "peer relative flex size-5 shrink-0 items-center justify-center rounded-sm border border-input bg-card transition-colors outline-none after:absolute after:-inset-3 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground",
         className
       )}

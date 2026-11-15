@@ -1,12 +1,12 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
-import { emailAutorizado } from "@/lib/emails";
+import { isAllowedEmail } from "@/lib/emails";
 
-// Primeira barreira: sem sessão de um email autorizado, vai para /login.
-// As páginas e as server actions voltam a verificar (exigirUtilizador).
+// First barrier: without a session for an allowed email, go to /login.
+// Pages and server actions check again (requireUser).
 export async function proxy(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  if (token && emailAutorizado(token.email)) return NextResponse.next();
+  if (token && isAllowedEmail(token.email)) return NextResponse.next();
 
   const url = req.nextUrl.clone();
   url.pathname = "/login";
@@ -16,7 +16,7 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Tudo menos: login, rotas do Auth.js, cron, health, ficheiros do Next e da PWA.
+  // Everything except: login, Auth.js routes, cron, health, Next and PWA files.
   matcher: [
     "/((?!login|api/auth|api/cron|api/health|_next/static|_next/image|favicon.ico|icon|apple-icon|manifest.webmanifest).*)",
   ],

@@ -1,16 +1,16 @@
-// Lista de emails autorizados (ALLOWED_EMAILS, separados por vírgula).
-// Comparação sem maiúsculas nem espaços. Lista vazia = ninguém entra.
+// List of allowed emails (ALLOWED_EMAILS, comma-separated).
+// Compared without case or spaces. An empty list means nobody gets in.
 
-export function lerEmailsAutorizados(valor: string | undefined = process.env.ALLOWED_EMAILS): Set<string> {
+export function parseAllowedEmails(value: string | undefined = process.env.ALLOWED_EMAILS): Set<string> {
   return new Set(
-    (valor ?? "")
+    (value ?? "")
       .split(",")
       .map((e) => e.trim().toLowerCase())
       .filter((e) => e.includes("@")),
   );
 }
 
-export function emailAutorizado(email: string | null | undefined, lista = lerEmailsAutorizados()): boolean {
+export function isAllowedEmail(email: string | null | undefined, list = parseAllowedEmails()): boolean {
   if (!email) return false;
-  return lista.has(email.trim().toLowerCase());
+  return list.has(email.trim().toLowerCase());
 }

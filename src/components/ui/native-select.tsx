@@ -3,8 +3,8 @@ import { cn } from "cn"
 import { ChevronDownIcon } from "lucide-react"
 
 /**
- * <select> do sistema com o aspeto dos outros campos. No telemóvel abre a roda do iPhone
- * ou a lista do Android, que é mais fácil de usar com o dedo do que um menu flutuante.
+ * System <select> that looks like the other fields. On phones it opens the iPhone wheel
+ * or the Android list, which is easier to use with a finger than a floating menu.
  */
 function NativeSelect({ className, children, ...props }: React.ComponentProps<"select">) {
   return (

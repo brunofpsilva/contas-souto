@@ -1,108 +1,112 @@
 import { ChevronRight, Plus, TriangleAlert } from "lucide-react";
 import Link from "next/link";
-import { BotaoAtualizar } from "@/components/botao-atualizar";
-import { EstadoPrevisao } from "@/components/estado-previsao";
-import { LinhaDespesa } from "@/components/linha-despesa";
-import { Seccao } from "@/components/seccao";
+import { Amount } from "@/components/amount";
+import { ExpenseRow } from "@/components/expense-row";
+import { ForecastStatus } from "@/components/forecast-status";
+import { RefreshButton } from "@/components/refresh-button";
+import { Section } from "@/components/section";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Valor } from "@/components/valor";
-import { listarDespesas, obterContas, obterDatas, obterTendencia } from "@/lib/dados";
-import { dataHora, euros } from "@/lib/formato";
-import { proximosPagamentos, resumoInicio } from "@/lib/inicio";
-import { calcularPrevisao } from "@/lib/previsao";
-import { PRIVADO } from "@/lib/privacidade";
-import { estadoSync } from "@/lib/sync";
+import { getT } from "@/i18n/server";
+import { getAccounts, getMilestoneDates, getTrend, listExpenses } from "@/lib/data";
+import { computeForecast } from "@/lib/forecast";
+import { formatDateTime, formatEuros } from "@/lib/format";
+import { homeSummary, upcomingPayments } from "@/lib/home";
+import { PRIVATE } from "@/lib/privacy";
+import { syncStatus } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 
-const LIGACAO = "text-primaria focus-visible:ring-ring/50 rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3";
+const LINK = "text-brand focus-visible:ring-ring/50 rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3";
 
-/** O Início responde a uma pergunta: chega o dinheiro, e quanto sobra? O resto está nos outros separadores. */
-export default async function InicioPage() {
-  const [despesas, contas, sync, datas, tendencia] = await Promise.all([
-    listarDespesas(),
-    obterContas(),
-    estadoSync(),
-    obterDatas(),
-    obterTendencia(),
+/** Home answers one question: is there enough money, and how much is left? The rest is in the other tabs. */
+export default async function HomePage() {
+  const [t, expenses, accounts, status, dates, trend] = await Promise.all([
+    getT(),
+    listExpenses(),
+    getAccounts(),
+    syncStatus(),
+    getMilestoneDates(),
+    getTrend(),
   ]);
-  const p = calcularPrevisao({
-    despesas,
-    disponivel: contas.disponivel,
-    reserva: contas.reserva,
-    ...datas,
-    fluxos: tendencia.fluxos,
+  const f = computeForecast({
+    expenses,
+    available: accounts.available,
+    reserve: accounts.reserve,
+    ...dates,
+    flows: trend.flows,
   });
-  const r = p.resumo;
-  const resumo = resumoInicio(p);
-  const proximos = proximosPagamentos(despesas, p.mesAtual);
-  const semDatas = !datas.dataEscritura && !datas.dataConclusaoObra;
+  const s = f.summary;
+  const summary = homeSummary(f, t);
+  const upcoming = upcomingPayments(expenses, f.currentMonth);
+  const noDates = !dates.deedDate && !dates.constructionEndDate;
 
   return (
     <div className="grid gap-4 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-start md:gap-6">
       <div className="grid gap-3">
         <Card className="grid gap-1 p-4">
-          <EstadoPrevisao tom={resumo.tom}>{resumo.titulo}</EstadoPrevisao>
-          {resumo.valor != null ? (
+          <ForecastStatus tone={summary.tone}>{summary.title}</ForecastStatus>
+          {summary.amount != null ? (
             <>
-              {/* O número grande. A cor fica no span de dentro: "text-numero" e "text-negativo" juntos anulavam-se. */}
-              <p className="text-numero mt-2 font-semibold">
-                <span className="sr-only">Saldo previsto: </span>
-                <span className={cn(PRIVADO, resumo.valor < 0 && "text-negativo")}>{euros(resumo.valor, { inteiro: true })}</span>
+              {/* The big number. The colour is on the inner span: "text-figure" and "text-negative" together cancelled each other. */}
+              <p className="text-figure mt-2 font-semibold">
+                <span className="sr-only">{t.home.projectedBalanceSr}</span>
+                <span className={cn(PRIVATE, summary.amount < 0 && "text-negative")}>{formatEuros(t, summary.amount, { whole: true })}</span>
               </p>
-              <p className="text-texto-suave text-sm">{resumo.contexto}</p>
-              {resumo.extra && (
-                <p className="text-texto-suave text-sm">
-                  {resumo.extra.texto}: <Valor v={resumo.extra.valor} inteiro privado className="text-texto font-medium" />
+              <p className="text-ink-muted text-sm">{summary.context}</p>
+              {summary.extra && (
+                <p className="text-ink-muted text-sm">
+                  {summary.extra.text}: <Amount v={summary.extra.amount} whole private className="text-ink font-medium" />
                 </p>
               )}
             </>
           ) : (
             <>
-              <p className="text-texto-suave mt-2 text-sm">A previsão precisa dos saldos do Wallet.</p>
-              <BotaoAtualizar variante="default" className="mt-3" />
+              <p className="text-ink-muted mt-2 text-sm">{t.common.needsBalances}</p>
+              <RefreshButton variant="default" className="mt-3" />
             </>
           )}
 
           <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-2">
-            <Link href="/definicoes#contas" className="focus-visible:ring-ring/50 grid min-h-11 content-center rounded-sm outline-none focus-visible:ring-3">
-              <span className="text-texto-suave text-sm">Saldo hoje</span>
-              <Valor v={r.disponivel} inteiro privado className="font-medium" />
+            <Link href="/settings#accounts" className="focus-visible:ring-ring/50 grid min-h-11 content-center rounded-sm outline-none focus-visible:ring-3">
+              <span className="text-ink-muted text-sm">{t.common.balanceToday}</span>
+              <Amount v={s.available} whole private className="font-medium" />
             </Link>
             <Link
-              href="/despesas?ver=por-pagar"
+              href="/expenses?show=unpaid"
               className="focus-visible:ring-ring/50 grid min-h-11 content-center justify-items-end rounded-sm outline-none focus-visible:ring-3"
             >
-              <span className="text-texto-suave text-sm">Por pagar</span>
-              <Valor v={r.porPagar} inteiro className="font-medium" />
+              <span className="text-ink-muted text-sm">{t.common.toPay}</span>
+              <Amount v={s.unpaid} whole className="font-medium" />
             </Link>
           </div>
         </Card>
 
-        {sync.ultimoErro ? (
-          <Alert variant="aviso">
+        {status.lastError ? (
+          <Alert variant="warning">
             <TriangleAlert aria-hidden />
             <span>
-              A última atualização falhou.{" "}
-              <Link href="/definicoes#contas" className="font-medium underline underline-offset-4">
-                Ver
+              {t.common.lastUpdateFailed}{" "}
+              <Link href="/settings#accounts" className="font-medium underline underline-offset-4">
+                {t.common.view}
               </Link>
             </span>
           </Alert>
         ) : (
-          sync.ultimaOk && <p className="text-texto-suave px-1 text-xs">Atualizado {dataHora(sync.ultimaOk.terminadaEm ?? sync.ultimaOk.iniciadaEm)}</p>
+          status.lastOk && (
+            <p className="text-ink-muted px-1 text-xs">{t.common.updated(formatDateTime(t, status.lastOk.finishedAt ?? status.lastOk.startedAt))}</p>
+          )
         )}
 
-        {semDatas && (
+        {noDates && (
           <Card>
             <Link
-              href="/definicoes#datas"
+              href="/settings#dates"
               className="focus-visible:ring-ring/50 flex min-h-12 items-center justify-between gap-3 rounded-xl px-4 outline-none focus-visible:ring-3"
             >
-              <span>Sem datas definidas.</span>
-              <span className="text-primaria flex items-center gap-1 font-medium">
-                Definir
+              <span>{t.home.noDates}</span>
+              <span className="text-brand flex items-center gap-1 font-medium">
+                {t.common.set}
                 <ChevronRight className="size-4" aria-hidden />
               </span>
             </Link>
@@ -110,36 +114,37 @@ export default async function InicioPage() {
         )}
       </div>
 
-      <Seccao
-        titulo="Próximos pagamentos"
-        acao={
-          proximos.length > 0 && (
-            <Link href="/despesas?ver=por-pagar" className={cn(LIGACAO, "flex min-h-11 items-center text-sm")}>
-              Ver todas
+      <Section
+        id="upcoming"
+        title={t.home.upcoming}
+        action={
+          upcoming.length > 0 && (
+            <Link href="/expenses?show=unpaid" className={cn(LINK, "flex min-h-11 items-center text-sm")}>
+              {t.home.seeAll}
             </Link>
           )
         }
       >
-        {proximos.length > 0 ? (
+        {upcoming.length > 0 ? (
           <Card>
             <ul className="divide-y">
-              {proximos.map((d) => (
-                <LinhaDespesa key={d.id} d={d} datas={datas} resumida />
+              {upcoming.map((e) => (
+                <ExpenseRow key={e.id} e={e} dates={dates} compact />
               ))}
             </ul>
           </Card>
         ) : (
           <Card className="grid justify-items-start gap-3 p-4">
-            <p>{despesas.length ? "Nada por pagar." : "Ainda não há despesas."}</p>
+            <p>{expenses.length ? t.home.nothingToPay : t.home.noExpenses}</p>
             <Button asChild variant="outline" className="max-sm:w-full">
-              <Link href="/despesas/nova">
+              <Link href="/expenses/new">
                 <Plus aria-hidden />
-                Adicionar despesa
+                {t.common.addExpense}
               </Link>
             </Button>
           </Card>
         )}
-      </Seccao>
+      </Section>
     </div>
   );
 }

@@ -1,1 +1,1 @@
-export function sslPara(url: string): "require" | false | undefined;
+export function sslFor(url: string): "require" | false | undefined;

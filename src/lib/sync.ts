@@ -1,159 +1,154 @@
-// Sincronização dos saldos com o Wallet. Usada pelo botão (manual) e pelo cron.
+// Syncing the balances with Wallet. Used by the button (manual) and by the cron.
 import { and, desc, eq, gt, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
-import type { OrigemSync } from "./dominio";
-import { mesDe, somarMeses } from "./meses";
-import { lerContas, lerMovimentos, WalletError, type ContaWallet } from "./wallet";
+import type { SyncSource } from "./domain";
+import { addMonths, monthOf } from "./months";
+import { fetchAccounts, fetchTransactions, WalletError, type WalletAccount } from "./wallet";
 
-const INTERVALO_MINIMO_MS = 30_000; // entre sincronizações manuais
-const SYNC_PRESA_MS = 2 * 60_000; // uma sincronização "a decorrer" há mais do que isto é ignorada
-// Os movimentos custam uns 10 pedidos (o limite é 500 por hora): no máximo uma vez por hora.
-const INTERVALO_MOVIMENTOS_MS = 55 * 60_000;
-/** Meses completos de histórico (o subsídio de Natal só se repete ao fim de 12). */
-export const MESES_HISTORICO = 12;
+const MIN_INTERVAL_MS = 30_000; // between manual syncs
+const STUCK_SYNC_MS = 2 * 60_000; // a sync "running" for longer than this is ignored
+// Transactions cost about 10 requests (the limit is 500 per hour): at most once an hour.
+const TRANSACTIONS_INTERVAL_MS = 55 * 60_000;
+/** Full months of history (the Christmas allowance only repeats after 12). */
+export const HISTORY_MONTHS = 12;
 
-export type ResultadoSync =
-  | { ok: true; nContas: number; nMovimentos: number | null; walletASincronizar: boolean; avisoMovimentos?: string }
+export type SyncResult =
+  | { ok: true; accountCount: number; transactionCount: number | null; walletSyncing: boolean; transactionsWarning?: string }
   | {
       ok: false;
-      /** Mensagem técnica, para o log e para a tabela das sincronizações. O ecrã usa fraseErroSync(codigo). */
-      mensagem: string;
-      codigo: string;
-      /** Minutos até se poder tentar de novo, quando o Wallet os indica. */
-      tentarDaquiMin?: number;
+      /** Technical message, for the log and the syncs table. The screen uses syncErrorMessage(code). */
+      message: string;
+      code: string;
+      /** Minutes until it can be tried again, when Wallet says so. */
+      retryInMinutes?: number;
     };
 
-export async function sincronizar({ origem, por }: { origem: OrigemSync; por?: string }): Promise<ResultadoSync> {
-  const agora = Date.now();
-  const s = schema.sincronizacoes;
+export async function sync({ source, by }: { source: SyncSource; by?: string }): Promise<SyncResult> {
+  const now = Date.now();
+  const s = schema.syncs;
 
-  const [ultima] = await db.select().from(s).orderBy(desc(s.iniciadaEm)).limit(1);
-  if (ultima && !ultima.terminadaEm && agora - ultima.iniciadaEm.getTime() < SYNC_PRESA_MS) {
-    return { ok: false, mensagem: "Já está uma sincronização a decorrer. Espera uns segundos.", codigo: "a_decorrer" };
+  const [last] = await db.select().from(s).orderBy(desc(s.startedAt)).limit(1);
+  if (last && !last.finishedAt && now - last.startedAt.getTime() < STUCK_SYNC_MS) {
+    return { ok: false, message: "A sync is already running.", code: "in_progress" };
   }
-  if (origem === "manual" && ultima && agora - ultima.iniciadaEm.getTime() < INTERVALO_MINIMO_MS) {
-    return { ok: false, mensagem: "Os saldos foram atualizados há instantes. Tenta daqui a meio minuto.", codigo: "demasiado_cedo" };
+  if (source === "manual" && last && now - last.startedAt.getTime() < MIN_INTERVAL_MS) {
+    return { ok: false, message: "The balances were updated moments ago.", code: "too_soon" };
   }
 
-  const [registo] = await db.insert(s).values({ origem, iniciadaPor: por ?? null }).returning({ id: s.id });
+  const [entry] = await db.insert(s).values({ source, startedBy: by ?? null }).returning({ id: s.id });
 
   try {
-    const r = await lerContas();
-    const quando = new Date();
+    const r = await fetchAccounts();
+    const when = new Date();
 
-    // Se o Wallet ainda está a preparar os dados e não devolveu contas, mantemos as que temos.
-    const manter = r.contas.length === 0 && r.sincronizacaoEmCurso;
-    if (!manter) {
+    // If Wallet is still preparing the data and returned no accounts, we keep the ones we have.
+    const keep = r.accounts.length === 0 && r.syncInProgress;
+    if (!keep) {
       await db.transaction(async (tx) => {
-        const ids = r.contas.map((c) => c.id);
-        if (ids.length) await tx.delete(schema.contas).where(notInArray(schema.contas.id, ids));
-        else await tx.delete(schema.contas);
+        const ids = r.accounts.map((a) => a.id);
+        if (ids.length) await tx.delete(schema.accounts).where(notInArray(schema.accounts.id, ids));
+        else await tx.delete(schema.accounts);
         if (ids.length) {
           await tx
-            .insert(schema.contas)
-            .values(r.contas.map((c) => ({ ...c, sincronizadoEm: quando })))
+            .insert(schema.accounts)
+            .values(r.accounts.map((a) => ({ ...a, syncedAt: when })))
             .onConflictDoUpdate({
-              target: schema.contas.id,
+              target: schema.accounts.id,
               set: {
-                nome: sql`excluded.nome`,
-                tipo: sql`excluded.tipo`,
-                saldo: sql`excluded.saldo`,
-                moeda: sql`excluded.moeda`,
-                sincronizadoEm: sql`excluded.sincronizado_em`,
+                name: sql`excluded.name`,
+                type: sql`excluded.type`,
+                balance: sql`excluded.balance`,
+                currency: sql`excluded.currency`,
+                syncedAt: sql`excluded.synced_at`,
               },
             });
         }
       });
     }
 
-    // Os movimentos não impedem a atualização dos saldos: se falharem, fica o aviso.
-    let nMovimentos: number | null = null;
-    let avisoMovimentos: string | undefined;
-    if (!manter && (await movimentosDesatualizados(agora))) {
+    // Transactions don't stop the balances from updating: if they fail, the warning stays.
+    let transactionCount: number | null = null;
+    let transactionsWarning: string | undefined;
+    if (!keep && (await transactionsOutdated(now))) {
       try {
-        nMovimentos = await atualizarMovimentos(r.contas, new Date());
+        transactionCount = await replaceTransactions(r.accounts, new Date());
       } catch (e) {
-        avisoMovimentos = e instanceof WalletError ? e.message : "Não foi possível ler os movimentos do Wallet.";
-        console.error("[sync movimentos]", e instanceof WalletError ? `${e.codigo}: ${e.message}` : e);
+        transactionsWarning = e instanceof WalletError ? e.message : "Couldn't read the Wallet transactions.";
+        console.error("[sync transactions]", e instanceof WalletError ? `${e.code}: ${e.message}` : e);
       }
     }
 
     await db
       .update(s)
       .set({
-        terminadaEm: new Date(),
+        finishedAt: new Date(),
         ok: true,
-        nContas: r.contas.length,
-        nMovimentos,
-        mensagem: avisoMovimentos ?? null,
-        walletASincronizar: r.sincronizacaoEmCurso,
+        accountCount: r.accounts.length,
+        transactionCount,
+        message: transactionsWarning ?? null,
+        walletSyncing: r.syncInProgress,
       })
-      .where(eq(s.id, registo.id));
-    return { ok: true, nContas: r.contas.length, nMovimentos, walletASincronizar: r.sincronizacaoEmCurso, avisoMovimentos };
+      .where(eq(s.id, entry.id));
+    return { ok: true, accountCount: r.accounts.length, transactionCount, walletSyncing: r.syncInProgress, transactionsWarning };
   } catch (e) {
-    const mensagem = e instanceof WalletError ? e.message : "Não foi possível ligar ao Wallet.";
-    const codigo = e instanceof WalletError ? e.codigo : "desconhecido";
-    // O detalhe técnico fica no log; o ecrã mostra uma frase simples (sync-frases.ts).
-    if (e instanceof WalletError) console.error(`[sync] ${codigo}${e.status ? ` (${e.status})` : ""}: ${mensagem}`);
+    const message = e instanceof WalletError ? e.message : "Couldn't connect to Wallet.";
+    const code = e instanceof WalletError ? e.code : "unknown";
+    // The technical detail stays in the log; the screen shows a simple sentence (sync-messages.ts).
+    if (e instanceof WalletError) console.error(`[sync] ${code}${e.status ? ` (${e.status})` : ""}: ${message}`);
     else console.error("[sync]", e);
-    await db.update(s).set({ terminadaEm: new Date(), ok: false, mensagem, codigoErro: codigo }).where(eq(s.id, registo.id));
-    return { ok: false, mensagem, codigo, tentarDaquiMin: e instanceof WalletError ? e.tentarDaquiMin : undefined };
+    await db.update(s).set({ finishedAt: new Date(), ok: false, message, errorCode: code }).where(eq(s.id, entry.id));
+    return { ok: false, message, code, retryInMinutes: e instanceof WalletError ? e.retryInMinutes : undefined };
   }
 }
 
-async function movimentosDesatualizados(agora: number): Promise<boolean> {
-  const s = schema.sincronizacoes;
-  const [ultima] = await db
-    .select({ quando: s.terminadaEm })
+async function transactionsOutdated(now: number): Promise<boolean> {
+  const s = schema.syncs;
+  const [last] = await db
+    .select({ when: s.finishedAt })
     .from(s)
-    .where(and(eq(s.ok, true), isNotNull(s.nMovimentos)))
-    .orderBy(desc(s.iniciadaEm))
+    .where(and(eq(s.ok, true), isNotNull(s.transactionCount)))
+    .orderBy(desc(s.startedAt))
     .limit(1);
-  return !ultima?.quando || agora - ultima.quando.getTime() >= INTERVALO_MOVIMENTOS_MS;
+  return !last?.when || now - last.when.getTime() >= TRANSACTIONS_INTERVAL_MS;
 }
 
 /**
- * Substitui os movimentos guardados pelos dos últimos 12 meses completos e do mês atual,
- * só das contas sincronizadas (sem arquivadas nem investimentos).
+ * Replaces the stored transactions with those of the last 12 full months and the current month,
+ * only from the synced accounts (no archived or investment accounts).
  */
-async function atualizarMovimentos(contas: readonly ContaWallet[], quando: Date): Promise<number> {
-  const primeiroMes = somarMeses(mesDe(quando), -MESES_HISTORICO);
-  // Um dia antes do início do mês em UTC, para não perder movimentos da meia-noite de Lisboa.
-  const desde = new Date(Date.parse(`${primeiroMes}-01T00:00:00Z`) - 86_400_000);
-  const ids = new Set(contas.map((c) => c.id));
-  const lista = (await lerMovimentos(desde))
-    .filter((m) => ids.has(m.contaId))
-    .map((m) => ({ ...m, mes: mesDe(m.data), sincronizadoEm: quando }))
-    .filter((m) => m.mes >= primeiroMes);
+async function replaceTransactions(accounts: readonly WalletAccount[], when: Date): Promise<number> {
+  const firstMonth = addMonths(monthOf(when), -HISTORY_MONTHS);
+  // One day before the start of the month in UTC, so we don't miss transactions at Lisbon midnight.
+  const since = new Date(Date.parse(`${firstMonth}-01T00:00:00Z`) - 86_400_000);
+  const ids = new Set(accounts.map((a) => a.id));
+  const list = (await fetchTransactions(since))
+    .filter((t) => ids.has(t.accountId))
+    .map((t) => ({ ...t, month: monthOf(t.date), syncedAt: when }))
+    .filter((t) => t.month >= firstMonth);
 
   await db.transaction(async (tx) => {
-    await tx.delete(schema.movimentos);
-    for (let i = 0; i < lista.length; i += 500) {
-      await tx.insert(schema.movimentos).values(lista.slice(i, i + 500));
+    await tx.delete(schema.transactions);
+    for (let i = 0; i < list.length; i += 500) {
+      await tx.insert(schema.transactions).values(list.slice(i, i + 500));
     }
   });
-  return lista.length;
+  return list.length;
 }
 
-/** Última sincronização terminada com sucesso e último erro (se for mais recente). */
-export async function estadoSync() {
-  const s = schema.sincronizacoes;
-  const [ultimaOk] = await db
+/** Last sync that finished successfully and the last error (if it is more recent). */
+export async function syncStatus() {
+  const s = schema.syncs;
+  const [lastOk] = await db.select().from(s).where(eq(s.ok, true)).orderBy(desc(s.startedAt)).limit(1);
+  const [lastError] = await db
     .select()
     .from(s)
-    .where(eq(s.ok, true))
-    .orderBy(desc(s.iniciadaEm))
+    .where(and(eq(s.ok, false), lastOk ? gt(s.startedAt, lastOk.startedAt) : undefined))
+    .orderBy(desc(s.startedAt))
     .limit(1);
-  const [ultimoErro] = await db
-    .select()
-    .from(s)
-    .where(and(eq(s.ok, false), ultimaOk ? gt(s.iniciadaEm, ultimaOk.iniciadaEm) : undefined))
-    .orderBy(desc(s.iniciadaEm))
-    .limit(1);
-  const [aDecorrer] = await db
+  const [running] = await db
     .select({ id: s.id })
     .from(s)
-    .where(and(isNull(s.terminadaEm), gt(s.iniciadaEm, new Date(Date.now() - SYNC_PRESA_MS))))
+    .where(and(isNull(s.finishedAt), gt(s.startedAt, new Date(Date.now() - STUCK_SYNC_MS))))
     .limit(1);
-  return { ultimaOk: ultimaOk ?? null, ultimoErro: ultimoErro ?? null, aDecorrer: Boolean(aDecorrer) };
+  return { lastOk: lastOk ?? null, lastError: lastError ?? null, running: Boolean(running) };
 }

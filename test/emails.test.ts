@@ -1,22 +1,22 @@
 import { describe, expect, test } from "vitest";
-import { emailAutorizado, lerEmailsAutorizados } from "@/lib/emails";
+import { isAllowedEmail, parseAllowedEmails } from "@/lib/emails";
 
 describe("ALLOWED_EMAILS", () => {
-  const lista = lerEmailsAutorizados(" Ana@Gmail.com , rui@gmail.com,, lixo ");
+  const list = parseAllowedEmails(" Ana@Gmail.com , rui@gmail.com,, junk ");
 
-  test("lê a lista sem espaços nem maiúsculas e ignora entradas inválidas", () => {
-    expect([...lista]).toEqual(["ana@gmail.com", "rui@gmail.com"]);
+  test("reads the list without spaces or upper case and ignores invalid entries", () => {
+    expect([...list]).toEqual(["ana@gmail.com", "rui@gmail.com"]);
   });
 
-  test("aceita só emails da lista", () => {
-    expect(emailAutorizado("ana@gmail.com", lista)).toBe(true);
-    expect(emailAutorizado(" RUI@gmail.com", lista)).toBe(true);
-    expect(emailAutorizado("outro@gmail.com", lista)).toBe(false);
-    expect(emailAutorizado("ana@gmail.com.evil.com", lista)).toBe(false);
-    expect(emailAutorizado(null, lista)).toBe(false);
+  test("only accepts emails on the list", () => {
+    expect(isAllowedEmail("ana@gmail.com", list)).toBe(true);
+    expect(isAllowedEmail(" RUI@gmail.com", list)).toBe(true);
+    expect(isAllowedEmail("other@gmail.com", list)).toBe(false);
+    expect(isAllowedEmail("ana@gmail.com.evil.com", list)).toBe(false);
+    expect(isAllowedEmail(null, list)).toBe(false);
   });
 
-  test("lista vazia ou em falta: ninguém entra", () => {
-    expect(emailAutorizado("ana@gmail.com", lerEmailsAutorizados(""))).toBe(false);
+  test("empty or missing list: nobody gets in", () => {
+    expect(isAllowedEmail("ana@gmail.com", parseAllowedEmails(""))).toBe(false);
   });
 });

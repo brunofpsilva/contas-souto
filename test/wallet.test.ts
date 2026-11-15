@@ -1,155 +1,156 @@
 import { describe, expect, test } from "vitest";
-import { lerContas, lerMovimentos, WalletError } from "@/lib/wallet";
+import { fetchAccounts, fetchTransactions, WalletError } from "@/lib/wallet";
 
-// fetch falso: regista os pedidos e devolve as respostas pela ordem dada.
-function fetchFalso(respostas: Array<() => Response>) {
-  const pedidos: { url: URL; auth: string | null }[] = [];
+// Fake fetch: records the requests and returns the responses in the given order.
+function fakeFetch(responses: Array<() => Response>) {
+  const requests: { url: URL; auth: string | null }[] = [];
   const fn = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(input instanceof Request ? input.url : input.toString());
-    pedidos.push({ url, auth: new Headers(init?.headers).get("Authorization") });
-    const r = respostas.shift();
-    if (!r) throw new Error("pedido inesperado: " + url);
+    requests.push({ url, auth: new Headers(init?.headers).get("Authorization") });
+    const r = responses.shift();
+    if (!r) throw new Error("unexpected request: " + url);
     return r();
   }) as typeof fetch;
-  return { fn, pedidos };
+  return { fn, requests };
 }
 
-const json = (corpo: unknown, status = 200, headers: Record<string, string> = {}) => () =>
-  new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json", ...headers } });
+const json = (body: unknown, status = 200, headers: Record<string, string> = {}) => () =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } });
 
-const conta = (id: string, name: string, accountType: string, saldo: number, extra: object = {}) => ({
+const account = (id: string, name: string, accountType: string, balance: number, extra: object = {}) => ({
   id,
   name,
   accountType,
   archived: false,
   isInvestmentAccount: false,
   currencyCode: "EUR",
-  balance: { currentBalance: saldo, currencyCode: "EUR", rawCurrentBalance: saldo },
+  balance: { currentBalance: balance, currencyCode: "EUR", rawCurrentBalance: balance },
   ...extra,
 });
 
-const BASE = "https://wallet.teste/wallet";
-const opts = (fetch: typeof globalThis.fetch) => ({ token: "token-teste", base: BASE, fetch });
+const BASE = "https://wallet.test/wallet";
+const opts = (fetch: typeof globalThis.fetch) => ({ token: "test-token", base: BASE, fetch });
 
-describe("lerContas", () => {
-  test("usa o caminho e o token certos e tira arquivadas e investimentos", async () => {
-    const { fn, pedidos } = fetchFalso([
+describe("fetchAccounts", () => {
+  test("uses the right path and token and drops archived and investment accounts", async () => {
+    const { fn, requests } = fakeFetch([
       json({
         accounts: [
-          conta("a1", "Banco", "CurrentAccount", 25000.39),
-          conta("a2", "Poupança", "SavingAccount", 15000.61),
-          conta("a3", "Investimento", "Investment", 3198, { isInvestmentAccount: true }),
-          conta("a4", "Cartão refeição", "Cash", 0),
-          conta("a5", "Velha", "Cash", 50, { archived: true }),
-          conta("a6", "Carteira de ações", "General", 900, { isInvestmentAccount: true }),
+          account("a1", "Banco", "CurrentAccount", 25000.39),
+          account("a2", "Poupança", "SavingAccount", 15000.61),
+          account("a3", "Investimento", "Investment", 3198, { isInvestmentAccount: true }),
+          account("a4", "Cartão refeição", "Cash", 0),
+          account("a5", "Velha", "Cash", 50, { archived: true }),
+          account("a6", "Carteira de ações", "General", 900, { isInvestmentAccount: true }),
         ],
         limit: 200,
         offset: 0,
       }),
     ]);
-    const r = await lerContas(opts(fn));
+    const r = await fetchAccounts(opts(fn));
 
-    expect(pedidos).toHaveLength(1);
-    expect(pedidos[0].auth).toBe("Bearer token-teste");
-    expect(pedidos[0].url.pathname).toBe("/wallet/v1/api/accounts");
-    expect(pedidos[0].url.searchParams.get("archived")).toBe("false");
-    expect(pedidos[0].url.searchParams.get("limit")).toBe("200");
-    expect(r.contas.map((c) => c.nome)).toEqual(["Banco", "Poupança", "Cartão refeição"]);
-    expect(r.contas[0]).toEqual({ id: "a1", nome: "Banco", tipo: "CurrentAccount", saldo: 25000.39, moeda: "EUR" });
+    expect(requests).toHaveLength(1);
+    expect(requests[0].auth).toBe("Bearer test-token");
+    expect(requests[0].url.pathname).toBe("/wallet/v1/api/accounts");
+    expect(requests[0].url.searchParams.get("archived")).toBe("false");
+    expect(requests[0].url.searchParams.get("limit")).toBe("200");
+    expect(r.accounts.map((a) => a.name)).toEqual(["Banco", "Poupança", "Cartão refeição"]);
+    expect(r.accounts[0]).toEqual({ id: "a1", name: "Banco", type: "CurrentAccount", balance: 25000.39, currency: "EUR" });
   });
 
-  test("segue a paginação com nextOffset", async () => {
-    const { fn, pedidos } = fetchFalso([
-      json({ accounts: [conta("a1", "Um", "Cash", 1)], limit: 200, offset: 0, nextOffset: 200 }),
-      json({ accounts: [conta("a2", "Dois", "Cash", 2)], limit: 200, offset: 200 }),
+  test("follows pagination with nextOffset", async () => {
+    const { fn, requests } = fakeFetch([
+      json({ accounts: [account("a1", "Um", "Cash", 1)], limit: 200, offset: 0, nextOffset: 200 }),
+      json({ accounts: [account("a2", "Dois", "Cash", 2)], limit: 200, offset: 200 }),
     ]);
-    const r = await lerContas(opts(fn));
-    expect(pedidos.map((p) => p.url.searchParams.get("offset"))).toEqual(["0", "200"]);
-    expect(r.contas.map((c) => c.id)).toEqual(["a1", "a2"]);
+    const r = await fetchAccounts(opts(fn));
+    expect(requests.map((p) => p.url.searchParams.get("offset"))).toEqual(["0", "200"]);
+    expect(r.accounts.map((a) => a.id)).toEqual(["a1", "a2"]);
   });
 
-  test("conta sem saldo (balance null) fica a zero; cartão de crédito mantém saldo negativo", async () => {
-    const { fn } = fetchFalso([
-      json({ accounts: [conta("a1", "Nova", "Cash", 0, { balance: null }), conta("c1", "Visa", "CreditCard", -250.5)] }),
-    ]);
-    const r = await lerContas(opts(fn));
-    expect(r.contas.map((c) => c.saldo)).toEqual([0, -250.5]);
+  test("an account without a balance (balance null) is zero; a credit card keeps its negative balance", async () => {
+    const { fn } = fakeFetch([json({ accounts: [account("a1", "Nova", "Cash", 0, { balance: null }), account("c1", "Visa", "CreditCard", -250.5)] })]);
+    const r = await fetchAccounts(opts(fn));
+    expect(r.accounts.map((a) => a.balance)).toEqual([0, -250.5]);
   });
 
-  test("indica quando o Wallet ainda está a sincronizar e os pedidos restantes", async () => {
-    const { fn } = fetchFalso([
-      json({ accounts: [] }, 200, { "X-Sync-In-Progress": "true", "X-RateLimit-Remaining": "487" }),
-    ]);
-    const r = await lerContas(opts(fn));
-    expect(r.sincronizacaoEmCurso).toBe(true);
-    expect(r.pedidosRestantes).toBe(487);
+  test("an account without a name stays empty (the screen shows a label)", async () => {
+    const { fn } = fakeFetch([json({ accounts: [account("a1", "  ", "Cash", 1)] })]);
+    expect((await fetchAccounts(opts(fn))).accounts[0].name).toBe("");
+  });
+
+  test("says when Wallet is still syncing and how many requests are left", async () => {
+    const { fn } = fakeFetch([json({ accounts: [] }, 200, { "X-Sync-In-Progress": "true", "X-RateLimit-Remaining": "487" })]);
+    const r = await fetchAccounts(opts(fn));
+    expect(r.syncInProgress).toBe(true);
+    expect(r.requestsLeft).toBe(487);
   });
 });
 
-describe("erros", () => {
-  async function erroDe(resposta: () => Response): Promise<WalletError> {
-    const { fn } = fetchFalso([resposta]);
+describe("errors", () => {
+  async function errorOf(response: () => Response): Promise<WalletError> {
+    const { fn } = fakeFetch([response]);
     try {
-      await lerContas(opts(fn));
+      await fetchAccounts(opts(fn));
     } catch (e) {
       if (e instanceof WalletError) return e;
       throw e;
     }
-    throw new Error("devia ter falhado");
+    throw new Error("should have failed");
   }
 
-  test("sem token não faz pedidos", async () => {
-    const { fn, pedidos } = fetchFalso([]);
-    const anterior = process.env.WALLET_API_TOKEN;
+  test("without a token it makes no requests", async () => {
+    const { fn, requests } = fakeFetch([]);
+    const previous = process.env.WALLET_API_TOKEN;
     delete process.env.WALLET_API_TOKEN;
-    await expect(lerContas({ base: BASE, fetch: fn })).rejects.toMatchObject({ codigo: "sem_token" });
-    process.env.WALLET_API_TOKEN = anterior;
-    expect(pedidos).toHaveLength(0);
+    await expect(fetchAccounts({ base: BASE, fetch: fn })).rejects.toMatchObject({ code: "no_token" });
+    process.env.WALLET_API_TOKEN = previous;
+    expect(requests).toHaveLength(0);
   });
 
-  test("401: token inválido", async () => {
-    expect((await erroDe(json({ error: "unauthorized" }, 401))).codigo).toBe("token_invalido");
+  test("401: invalid token", async () => {
+    expect((await errorOf(json({ error: "unauthorized" }, 401))).code).toBe("invalid_token");
   });
 
-  test("403 com código: Premium e consentimento", async () => {
-    const p = await erroDe(json({ error: "x", code: "PREMIUM_REQUIRED" }, 403));
-    expect(p.codigo).toBe("premium");
+  test("403 with a code: Premium and consent", async () => {
+    const p = await errorOf(json({ error: "x", code: "PREMIUM_REQUIRED" }, 403));
+    expect(p.code).toBe("premium");
     expect(p.message).toMatch(/Premium/);
-    expect((await erroDe(json({ error: "x", code: "API_CONSENT_REQUIRED" }, 403))).codigo).toBe("consentimento");
+    expect((await errorOf(json({ error: "x", code: "API_CONSENT_REQUIRED" }, 403))).code).toBe("consent");
   });
 
-  test("409: primeira sincronização, com os minutos indicados", async () => {
-    const e = await erroDe(json({ error: "init_sync_in_progress", retry_after_minutes: 5 }, 409));
-    expect(e.codigo).toBe("sincronizacao_inicial");
-    expect(e.tentarDaquiMin).toBe(5);
-    expect(e.message).toContain("5 minutos");
+  test("409: first sync, with the minutes given", async () => {
+    const e = await errorOf(json({ error: "init_sync_in_progress", retry_after_minutes: 5 }, 409));
+    expect(e.code).toBe("initial_sync");
+    expect(e.retryInMinutes).toBe(5);
+    expect(e.message).toContain("5 minutes");
   });
 
-  test("429: limite de pedidos, lê o Retry-After em segundos", async () => {
-    const e = await erroDe(json({ error: "rate limit" }, 429, { "Retry-After": "120" }));
-    expect(e.codigo).toBe("limite_pedidos");
-    expect(e.tentarDaquiMin).toBe(2);
+  test("429: rate limit, reads Retry-After in seconds", async () => {
+    const e = await errorOf(json({ error: "rate limit" }, 429, { "Retry-After": "120" }));
+    expect(e.code).toBe("rate_limited");
+    expect(e.retryInMinutes).toBe(2);
   });
 
-  test("500: erro do servidor", async () => {
-    expect((await erroDe(json({ error: "boom" }, 500))).codigo).toBe("erro_servidor");
+  test("500: server error", async () => {
+    expect((await errorOf(json({ error: "boom" }, 500))).code).toBe("server_error");
   });
 
-  test("resposta sem lista de contas", async () => {
-    expect((await erroDe(json({ items: [] }))).codigo).toBe("formato");
-    expect((await erroDe(() => new Response("<html>", { status: 200 }))).codigo).toBe("formato");
+  test("response without the accounts list", async () => {
+    expect((await errorOf(json({ items: [] }))).code).toBe("bad_format");
+    expect((await errorOf(() => new Response("<html>", { status: 200 }))).code).toBe("bad_format");
   });
 
-  test("falha de rede", async () => {
+  test("network failure", async () => {
     const fn = (async () => {
       throw new TypeError("fetch failed");
     }) as typeof fetch;
-    await expect(lerContas(opts(fn))).rejects.toMatchObject({ codigo: "sem_ligacao" });
+    await expect(fetchAccounts(opts(fn))).rejects.toMatchObject({ code: "no_connection" });
   });
 });
 
-describe("lerMovimentos", () => {
-  const registo = (id: string, extra: object = {}) => ({
+describe("fetchTransactions", () => {
+  const record = (id: string, extra: object = {}) => ({
     id,
     accountId: "a1",
     recordDate: "2026-09-30T23:00:00Z",
@@ -160,38 +161,38 @@ describe("lerMovimentos", () => {
     ...extra,
   });
 
-  test("pede desde a data indicada, segue a paginação e normaliza", async () => {
-    const { fn, pedidos } = fetchFalso([
-      json({ records: [registo("r1")], limit: 200, offset: 0, nextOffset: 200 }),
+  test("asks from the given date, follows pagination and normalises", async () => {
+    const { fn, requests } = fakeFetch([
+      json({ records: [record("r1")], limit: 200, offset: 0, nextOffset: 200 }),
       json({
         records: [
-          registo("r2", { transfer: { type: "paired" }, category: { id: "t", name: "Transfer", group: { id: "system_categories" } } }),
-          registo("r3", { category: { id: "x", name: "Mobília", parentId: "p", group: { id: "shopping" } } }),
-          { id: "mau" },
+          record("r2", { transfer: { type: "paired" }, category: { id: "t", name: "Transfer", group: { id: "system_categories" } } }),
+          record("r3", { category: { id: "x", name: "Mobília", parentId: "p", group: { id: "shopping" } } }),
+          { id: "bad" },
         ],
         limit: 200,
         offset: 200,
       }),
     ]);
-    const r = await lerMovimentos(new Date("2025-09-30T00:00:00Z"), opts(fn));
-    expect(pedidos[0].url.pathname).toBe("/wallet/v1/api/records");
-    expect(pedidos[0].url.searchParams.get("recordDate")).toBe("gte.2025-09-30T00:00:00.000Z");
-    expect(pedidos.map((p) => p.url.searchParams.get("offset"))).toEqual(["0", "200"]);
-    expect(r.map((m) => m.id)).toEqual(["r1", "r2", "r3"]);
+    const r = await fetchTransactions(new Date("2025-09-30T00:00:00Z"), opts(fn));
+    expect(requests[0].url.pathname).toBe("/wallet/v1/api/records");
+    expect(requests[0].url.searchParams.get("recordDate")).toBe("gte.2025-09-30T00:00:00.000Z");
+    expect(requests.map((p) => p.url.searchParams.get("offset"))).toEqual(["0", "200"]);
+    expect(r.map((t) => t.id)).toEqual(["r1", "r2", "r3"]);
     expect(r[0]).toEqual({
       id: "r1",
-      contaId: "a1",
-      data: new Date("2026-09-30T23:00:00Z"),
-      valor: -12.5,
-      moeda: "EUR",
-      categoriaId: "c1",
-      categoriaPaiId: null,
-      categoriaNome: "Almoços",
-      grupo: "food_and_drinks",
-      nota: "Almoço",
-      transferencia: false,
+      accountId: "a1",
+      date: new Date("2026-09-30T23:00:00Z"),
+      amount: -12.5,
+      currency: "EUR",
+      categoryId: "c1",
+      parentCategoryId: null,
+      categoryName: "Almoços",
+      categoryGroup: "food_and_drinks",
+      note: "Almoço",
+      isTransfer: false,
     });
-    expect(r[1].transferencia).toBe(true);
-    expect(r[2].categoriaPaiId).toBe("p");
+    expect(r[1].isTransfer).toBe(true);
+    expect(r[2].parentCategoryId).toBe("p");
   });
 });

@@ -12,11 +12,11 @@ const buttonVariants = cva(
         outline: "border-input bg-card hover:bg-muted aria-expanded:bg-muted",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-muted aria-expanded:bg-muted",
-        destructive: "bg-negativo-suave text-negativo hover:bg-negativo-suave/80",
+        destructive: "bg-negative-muted text-negative hover:bg-negative-muted/80",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        // Todos os botões têm pelo menos 44 px de altura (alvo de toque).
+        // Every button is at least 44 px tall (touch target).
         default: "h-11 px-4",
         lg: "h-12 px-5 text-base",
         icon: "size-11",
