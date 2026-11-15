@@ -7,7 +7,6 @@ import { db, schema } from "@/db";
 import { getT } from "@/i18n/server";
 import { requireUser } from "@/lib/auth";
 import { getMilestoneDates } from "@/lib/data";
-import type { Status } from "@/lib/domain";
 import { validateExpense, type ExpenseErrors } from "@/lib/validation";
 
 export type ExpenseFormState = {
@@ -84,31 +83,6 @@ export async function updateExpense(id: number, _previous: ExpenseFormState, for
 
   revalidatePath("/", "layout");
   redirect("/expenses");
-}
-
-export type ActionResult = { ok: true } | { ok: false; message: string };
-
-/** Marks as paid or back to planned. Stores who marked it and when. */
-export async function setStatus(id: number, status: Status): Promise<ActionResult> {
-  const me = await requireUser();
-  const t = await getT();
-  if (!isValidId(id) || (status !== "paid" && status !== "planned")) return { ok: false, message: t.common.somethingWrong };
-
-  const paid = status === "paid";
-  const rows = await db
-    .update(e)
-    .set({
-      status,
-      paidBy: paid ? me.email : null,
-      paidAt: paid ? new Date() : null,
-      updatedBy: me.email,
-      updatedAt: new Date(),
-    })
-    .where(eq(e.id, id))
-    .returning({ id: e.id });
-
-  revalidatePath("/", "layout");
-  return rows.length ? { ok: true } : { ok: false, message: t.expenses.gone };
 }
 
 /** Deletes the expense and goes back to the list. Only returns something if it goes wrong. */

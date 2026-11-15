@@ -1309,6 +1309,8 @@ O que foi construído segue este documento. As diferenças são estas:
 | Início sem despesas | Botão "Adicionar despesa" cheio | Botão com contorno | O "+" da barra já é a ação principal do ecrã. |
 | Erro "há instantes" | "Saldos atualizados há instantes." | "Atualização pedida há instantes. Disponível dentro de meio minuto." | A frase antiga também aparecia depois de uma tentativa falhada. |
 | Eixo do gráfico | `mesCurto()` ("dez 26") | `mesNoEixo()` ("dez", "jan 27") | Só o mês; o ano aparece na viragem. |
+| Início (15 nov) | Os 4 próximos pagamentos | Um cartão por marco: data, dias que faltam, quanto há a pagar até lá (ou desde o marco anterior) e o saldo depois | Responde à pergunta da app marco a marco; a lista de despesas já está em Despesas. |
+| Marcar como paga (15 nov) | Círculo na linha, com aviso e "Anular" | Só no formulário da despesa (Estado → Paga → Guardar) | Com um toque era demasiado fácil marcar sem querer. Saem o círculo, os avisos e a ação `setStatus`. |
 
 Dois problemas antigos que apareceram pelo caminho e ficaram corrigidos:
 

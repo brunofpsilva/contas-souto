@@ -1,25 +1,27 @@
-import { ChevronRight, Plus, TriangleAlert } from "lucide-react";
+import { ChevronRight, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { Amount } from "@/components/amount";
-import { ExpenseRow } from "@/components/expense-row";
 import { ForecastStatus } from "@/components/forecast-status";
 import { RefreshButton } from "@/components/refresh-button";
 import { Section } from "@/components/section";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getT } from "@/i18n/server";
 import { getAccounts, getMilestoneDates, getTrend, listExpenses } from "@/lib/data";
 import { computeForecast } from "@/lib/forecast";
-import { formatDateTime, formatEuros } from "@/lib/format";
-import { homeSummary, upcomingPayments } from "@/lib/home";
+import { formatDateTime, formatEuros, shortDate } from "@/lib/format";
+import { homeSummary, milestoneCards } from "@/lib/home";
+import { dayOf } from "@/lib/months";
 import { PRIVATE } from "@/lib/privacy";
 import { syncStatus } from "@/lib/sync";
 import { cn } from "@/lib/utils";
 
 const LINK = "text-brand focus-visible:ring-ring/50 rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3";
 
-/** Home answers one question: is there enough money, and how much is left? The rest is in the other tabs. */
+/**
+ * Home answers one question: is there enough money, and how much is left? Under the status, one
+ * card per upcoming milestone. The expense lists are in the other tabs.
+ */
 export default async function HomePage() {
   const [t, expenses, accounts, status, dates, trend] = await Promise.all([
     getT(),
@@ -38,7 +40,7 @@ export default async function HomePage() {
   });
   const s = f.summary;
   const summary = homeSummary(f, t);
-  const upcoming = upcomingPayments(expenses, f.currentMonth);
+  const cards = milestoneCards(f, expenses, dayOf(new Date()));
   const noDates = !dates.deedDate && !dates.constructionEndDate;
 
   return (
@@ -98,50 +100,70 @@ export default async function HomePage() {
           )
         )}
 
-        {noDates && (
+      </div>
+
+      <Section
+        id="milestones"
+        title={t.home.milestones}
+        action={
+          cards.length > 0 && (
+            <Link href="/forecast" className={cn(LINK, "flex min-h-11 items-center text-sm")}>
+              {t.home.seeForecast}
+            </Link>
+          )
+        }
+      >
+        {cards.length > 0 ? (
+          cards.map((c) => (
+            <Card key={c.kind} className="grid gap-3 p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                <h3 className="font-semibold">{t.milestones[c.kind].title}</h3>
+                <span className="text-ink-muted text-sm">
+                  {shortDate(t, c.date)} · {t.home.daysLeft(c.daysLeft)}
+                </span>
+              </div>
+              <dl className="grid gap-1.5 text-sm">
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-ink-muted">{c.since ? t.home.toPaySince(t.milestones[c.since].after) : t.home.toPayUntil}</dt>
+                  <dd className="text-right">
+                    {c.toPayCount > 0 ? (
+                      <>
+                        <span className="text-ink-muted">{t.expenseCount(c.toPayCount)} · </span>
+                        <Amount v={c.toPay} whole className="font-medium" />
+                      </>
+                    ) : (
+                      t.home.nothingToPay
+                    )}
+                  </dd>
+                </div>
+                {c.balanceAfter != null && (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <dt className="text-ink-muted">{t.home.balanceAfter}</dt>
+                    <dd>
+                      <Amount
+                        v={c.balanceAfter}
+                        whole
+                        private
+                        className={cn("font-medium", c.tone === "negative" && "text-negative", c.tone === "warning" && "text-warning")}
+                      />
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </Card>
+          ))
+        ) : (
           <Card>
             <Link
               href="/settings#dates"
               className="focus-visible:ring-ring/50 flex min-h-12 items-center justify-between gap-3 rounded-xl px-4 outline-none focus-visible:ring-3"
             >
-              <span>{t.home.noDates}</span>
+              <span>{noDates ? t.home.noDates : t.home.datesPassed}</span>
               <span className="text-brand flex items-center gap-1 font-medium">
-                {t.common.set}
+                {noDates ? t.common.set : t.common.edit}
                 <ChevronRight className="size-4" aria-hidden />
               </span>
             </Link>
-          </Card>
-        )}
-      </div>
-
-      <Section
-        id="upcoming"
-        title={t.home.upcoming}
-        action={
-          upcoming.length > 0 && (
-            <Link href="/expenses?show=unpaid" className={cn(LINK, "flex min-h-11 items-center text-sm")}>
-              {t.home.seeAll}
-            </Link>
-          )
-        }
-      >
-        {upcoming.length > 0 ? (
-          <Card>
-            <ul className="divide-y">
-              {upcoming.map((e) => (
-                <ExpenseRow key={e.id} e={e} dates={dates} compact />
-              ))}
-            </ul>
-          </Card>
-        ) : (
-          <Card className="grid justify-items-start gap-3 p-4">
-            <p>{expenses.length ? t.home.nothingToPay : t.home.noExpenses}</p>
-            <Button asChild variant="outline" className="max-sm:w-full">
-              <Link href="/expenses/new">
-                <Plus aria-hidden />
-                {t.common.addExpense}
-              </Link>
-            </Button>
           </Card>
         )}
       </Section>

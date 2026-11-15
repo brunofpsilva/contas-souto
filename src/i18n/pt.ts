@@ -128,10 +128,16 @@ export const pt = {
     projectedBalanceSr: "Saldo previsto: ",
     atEndOf: (month: string) => `no fim de ${month}`,
     noDates: "Sem datas definidas.",
-    upcoming: "Próximos pagamentos",
-    seeAll: "Ver todas",
-    nothingToPay: "Nada por pagar.",
-    noExpenses: "Ainda não há despesas.",
+    datesPassed: "As datas já passaram.",
+    milestones: "Marcos",
+    seeForecast: "Ver previsão",
+    daysLeft: (n: number) =>
+      n === 0 ? "Hoje" : n === 1 ? "Amanhã" : n > 1 ? `Faltam ${n} dias` : n === -1 ? "Ontem" : `Há ${-n} dias`,
+    toPayUntil: "A pagar até lá",
+    /** `after` is milestones.*.after: "A pagar depois da escritura". */
+    toPaySince: (after: string) => `A pagar ${after}`,
+    balanceAfter: "Saldo depois",
+    nothingToPay: "Nada",
   },
 
   expenses: {
@@ -146,10 +152,6 @@ export const pt = {
     },
     overdue: (month: string) => `Atrasada · ${month}`,
     paidBadge: "Paga",
-    toggleLabel: (description: string, paid: boolean) => `${description}: ${paid ? "marcar por pagar" : "marcar como paga"}`,
-    markedPaid: (description: string) => `${quote(description)} paga.`,
-    markedUnpaid: (description: string) => `${quote(description)} por pagar.`,
-    undo: "Anular",
     added: "Despesa adicionada.",
     createdBy: (name: string) => `Criada por ${name}`,
     paidBy: (name: string, date: string) => `Paga por ${name} a ${date}`,
