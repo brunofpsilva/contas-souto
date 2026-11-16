@@ -125,8 +125,9 @@ export const pt = {
   },
 
   home: {
-    projectedBalanceSr: "Saldo previsto: ",
-    atEndOf: (month: string) => `no fim de ${month}`,
+    committed: "Total comprometido",
+    balanceIfAllPaid: "Saldo depois de pagar tudo",
+    payAll: "Pagar tudo",
     noDates: "Sem datas definidas.",
     datesPassed: "As datas já passaram.",
     milestones: "Marcos",

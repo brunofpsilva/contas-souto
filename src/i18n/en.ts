@@ -119,8 +119,9 @@ export const en: Messages = {
   },
 
   home: {
-    projectedBalanceSr: "Projected balance: ",
-    atEndOf: (month) => `at the end of ${month}`,
+    committed: "Total committed",
+    balanceIfAllPaid: "Balance after paying all",
+    payAll: "Pay everything",
     noDates: "No dates set.",
     datesPassed: "The dates have passed.",
     milestones: "Milestones",
