@@ -10,15 +10,19 @@ export function isValidMonth(v: string): v is Month {
   return MONTH_RE.test(v);
 }
 
+// Created once: building an Intl.DateTimeFormat costs ~70µs, and the trend formats every transaction.
+// en-CA formats as "2026-10" and "2026-10-31".
+const MONTH_FORMAT = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit" });
+const DAY_FORMAT = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+
 /** Month of a date in Lisbon time. */
 export function monthOf(date: Date): Month {
-  // en-CA formats as "2026-10".
-  return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit" }).format(date) as Month;
+  return MONTH_FORMAT.format(date) as Month;
 }
 
 /** Day of a date in Lisbon time, "YYYY-MM-DD". */
 export function dayOf(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  return DAY_FORMAT.format(date);
 }
 
 export function addMonths(month: string, n: number): Month {

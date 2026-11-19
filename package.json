@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --env-file-if-exists=.env scripts/migrar.mjs",
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
     "db:studio": "drizzle-kit studio",
     "cron:sync": "node --env-file-if-exists=.env scripts/cron-sync.mjs"
   },

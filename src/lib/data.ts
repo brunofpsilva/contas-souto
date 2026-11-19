@@ -31,16 +31,11 @@ export async function getMilestoneDates(): Promise<MilestoneDates> {
   return { deedDate: s.deedDate, constructionEndDate: s.constructionEndDate };
 }
 
-/** Day-to-day spending written by hand, by cycle. Without the table (migration not applied) everything is automatic. */
+/** Day-to-day spending written by hand, by cycle. */
 async function getSpendingOverrides(): Promise<Map<string, number>> {
   const o = schema.spendingOverrides;
-  try {
-    const rows = await db.select({ month: o.month, amount: o.amount }).from(o);
-    return new Map(rows.map((r) => [r.month, r.amount]));
-  } catch (e) {
-    console.error("[spending overrides] Has migration 0008 been applied?", e);
-    return new Map();
-  }
+  const rows = await db.select({ month: o.month, amount: o.amount }).from(o);
+  return new Map(rows.map((r) => [r.month, r.amount]));
 }
 
 /** Day-to-day forecast from the transactions stored in the last sync. */
